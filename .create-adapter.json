@@ -1,0 +1,39 @@
+{
+    "cli": true,
+    "adapterName": "volumio",
+    "title": "Volumio",
+    "description": "Volumio Adapter for ioBroker",
+    "keywords": [
+        "volumio",
+        "hifi",
+        "smart home",
+        "home automation"
+    ],
+    "expert": "yes",
+    "features": [
+        "adapter"
+    ],
+    "adminFeatures": [],
+    "type": "multimedia",
+    "startMode": "daemon",
+    "connectionType": "local",
+    "dataSource": "poll",
+    "connectionIndicator": "no",
+    "language": "TypeScript",
+    "adminReact": "no",
+    "tools": [
+        "ESLint"
+    ],
+    "indentation": "Space (4)",
+    "quotes": "single",
+    "es6class": "yes",
+    "authorName": "André Iske",
+    "authorGithub": "a-i-ks",
+    "authorEmail": "andre.iske@mailbox.org",
+    "gitRemoteProtocol": "HTTPS",
+    "gitCommit": "no",
+    "license": "MIT License",
+    "ci": "gh-actions",
+    "dependabot": "no",
+    "creatorVersion": "1.31.0"
+}
