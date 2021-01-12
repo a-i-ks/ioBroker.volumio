@@ -59,7 +59,13 @@ class Volumio extends utils.Adapter {
             timeout: 1000
             // headers: {'X-Custom-Header': 'foobar'}
         });
-        this.httpServer.listen(3000);
+        if (this.config.subscribeToStateChanges && this.config.port) {
+            this.log.debug('Subscription mode is activated');
+            this.httpServer.listen(this.config.port);
+        }
+        else if (this.config.subscribeToStateChanges && !this.config.port) {
+            this.log.error('Subscription mode is activated, but port is not configured.');
+        }
         this.httpServer.get('/volumiostatus', (req, res) => {
             res.send('Hello World!');
         });
