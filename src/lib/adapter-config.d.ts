@@ -5,6 +5,8 @@ declare global {
     namespace ioBroker {
         interface AdapterConfig {
             host: string;
+            subscribeToStateChanges: boolean;
+            port: number;
         }
     }
 }

@@ -17,30 +17,37 @@
 Volumio Adapter for ioBroker
 This is an adapter for remote controlling a volumio instance.
 
+It uses the following REST api:
+https://volumio.github.io/docs/API/REST_API.html
+
+At the moment, the following functions are implemented:
+* Player commands
+    * Mute / Unmute
+    * Next / Prev
+    * Play
+        * Play the n-th song from the playlist
+    * Pause
+    * Toggle between Play/Pause
+    * Stop
+    * Volume control
+        * Set to specific value
+        * Volume step up / down
+* Queue
+    * Clear queue
+    * Repeat track
+    * Shuffel mode
+* Receive player state
+
+Todo:
+- [ ] List playlists
+- [ ] Browsing
+
+
+
+
 ## Developer manual
 This section is intended for the developer. It can be deleted later
 
-### Getting started
-
-You are almost done, only a few steps left:
-1. Create a new repository on GitHub with the name `ioBroker.volumio`
-1. Initialize the current folder as a new git repository:  
-    ```bash
-    git init
-    git add .
-    git commit -m "Initial commit"
-    ```
-1. Link your local repository with the one on GitHub:  
-    ```bash
-    git remote add origin https://github.com/a-i-ks/ioBroker.volumio
-    ```
-
-1. Push all files to the GitHub repo:  
-    ```bash
-    git push origin master
-    ```
-
-1. Head over to [src/main.ts](src/main.ts) and start programming!
 
 ### Best Practices
 We've collected some [best practices](https://github.com/ioBroker/ioBroker.repositories#development-and-coding-best-practices) regarding ioBroker development and coding in general. If you're new to ioBroker or Node.js, you should

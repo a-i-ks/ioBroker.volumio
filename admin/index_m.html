@@ -73,13 +73,29 @@
             </div>
         </div>
 
-        <!-- Put your content here -->
-
-        <!-- For example columns with settings: -->
-        <div class="row">
-            <div class="input-field col s10 m4">
-                <input type="text" id="host" class="value" />
-                <label class="translate" for="host">Volumino Host Address</label>
+        <div class="section">
+            <div class="row">
+                <div class="input-field col s10 m4">
+                    <input type="text" id="host" class="value" />
+                    <label class="translate" for="host">Volumino Host Address</label>
+                </div>
+            </div>
+        </div>
+        <div class="section">
+            <div class="row">
+                <div class="translate" for="subscribeModeDescription">The adapter can be used in a event driven fashion. Volumio can notify via POST calls when state changes. 
+                    This is a much more efficient and elegant way to retrieve informations, instead of continuously polling the relevant information. 
+                </div>
+            </div>
+            <div class="row">
+                <div class="input-field col s10 m4">
+                    <input type="checkbox" id="subscribeToStateChanges" class="value"/>
+                    <label class="translate" for="subscribeToStateChanges">Subscribe to player state changes</label>
+                </div>
+                <div class="input-field col s10 m4">
+                    <input type="number" id="port" class="value" />
+                    <label class="translate" for="port">Port</label>
+                </div>
             </div>
         </div>
         <div class="row">

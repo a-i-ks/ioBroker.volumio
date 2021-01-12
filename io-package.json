@@ -289,6 +289,18 @@
             "native": {}
         },
         {
+            "_id": "queue.shuffle",
+            "type": "state",
+            "common": {
+                "role": "indicator",
+                "name": "Shuffle playmode activated",
+                "type": "boolean",
+                "read": true,
+                "write": true            
+            },
+            "native": {}
+        },
+        {
             "_id": "queue.repeatTrackState",
             "type": "state",
             "common": {
@@ -481,10 +493,22 @@
             "type": "state",
             "common": {
                 "role": "indicator",
-                "name": "Shuffle  playmode activated",
+                "name": "Shuffle playmode activated",
                 "type": "boolean",
                 "read": true,
-                "write": false
+                "write": true
+            },
+            "native": {}
+        },
+        {
+            "_id": "queue.shuffleMode",
+            "type": "state",
+            "common": {
+                "role": "media.mode.shuffle",
+                "name": "Shuffle mode 0 - none, 1 - all, 2 - one",
+                "type": "number",
+                "read": true,
+                "write": true            
             },
             "native": {}
         },

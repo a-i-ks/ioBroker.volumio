@@ -5,20 +5,18 @@
 // The adapter-core module gives you access to the core ioBroker functions
 // you need to create an adapter
 import * as utils from '@iobroker/adapter-core';
-import {PlayerState} from './types';
+import { PlayerState } from './types';
 import axios, { AxiosInstance } from 'axios';
+import express from 'express';
 // Load your modules here, e.g.:
 // import * as fs from "fs";
 
-
-
 class Volumio extends utils.Adapter {
 
-    private playerState : PlayerState;
-
+    playerState: PlayerState;
     static readonly namespace = 'volumio.0.';
-
     axiosInstance: AxiosInstance;
+    httpServer;
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
         super({
@@ -30,11 +28,10 @@ class Volumio extends utils.Adapter {
         // this.on('objectChange', this.onObjectChange.bind(this));
         // this.on('message', this.onMessage.bind(this));
         this.on('unload', this.onUnload.bind(this));
-        this.playerState = ne;
         this.axiosInstance = axios.create();
+        this.playerState = {} as PlayerState;
+        this.httpServer = express();
     }
-
-
 
     /**
      * Is called when databases are connected and adapter received configuration.
@@ -49,6 +46,17 @@ class Volumio extends utils.Adapter {
             baseURL: `http://${this.config.host}/api/v1/`,
             timeout: 1000
             // headers: {'X-Custom-Header': 'foobar'}
+        });
+
+        if (this.config.subscribeToStateChanges && this.config.port) {
+            this.log.debug('Subscription mode is activated');
+            this.httpServer.listen(this.config.port);
+        } else if (this.config.subscribeToStateChanges && !this.config.port) {
+            this.log.error('Subscription mode is activated, but port is not configured.');
+        }
+
+        this.httpServer.get('/volumiostatus', (req, res) => {
+            res.send('Hello World!')
         });
 
         // The adapters config (in the instance object everything under the attribute "native") is accessible via
@@ -143,7 +151,7 @@ class Volumio extends utils.Adapter {
         }
         this.log.debug(`state ${id} changed: ${state.val}`);
 
-        switch(id.replace(`${this.namespace}.`,``)) {
+        switch (id.replace(`${this.namespace}.`, ``)) {
             case 'getPlaybackInfo':
                 this.updatePlayerState();
                 break;
@@ -158,35 +166,49 @@ class Volumio extends utils.Adapter {
                 break;
             case 'player.pause':
                 this.sendCmd('pause');
+                this.playerState.status = 'pause';
+                this.setStateAsync('playbackInfo.status', 'pause', true);
                 break;
             case 'player.play':
                 this.sendCmd('play');
+                this.playerState.status = 'play';
+                this.setStateAsync('playbackInfo.status', 'play', true);
                 break;
             case 'player.playN':
-                if(!state.val || !isNumber(state.val)) {
+                if (!isNumber(state.val)) {
                     this.log.warn('player.playN state change. Invalid state value passed');
                     break;
                 }
                 this.sendCmd(`play&N=${state.val}`);
+                this.playerState.status = 'play';
                 break;
             case 'player.prev':
                 this.sendCmd('prev');
                 break;
             case 'player.stop':
                 this.sendCmd('stop');
+                this.playerState.status = 'stop';
+                this.setStateAsync('playbackInfo.status', 'stop', true);
                 break;
             case 'player.toggle':
                 this.sendCmd('toggle');
+                if (this.playerState.status == 'play') {
+                    this.playerState.status = 'pause'
+                } else if (this.playerState.status == 'pause' || this.playerState.status == 'stop') {
+                    this.playerState.status = 'play'
+                }
                 break;
             case 'player.volume':
-                if(!isNumber(state.val)) {
+                if (!isNumber(state.val)) {
                     this.log.warn('player.volume state change. Invalid state value passed');
                     break;
-                } else if (!state.val || state.val > 100 || state.val < 0) {
+                } else if ((!state.val && state.val !== 0) || state.val > 100 || state.val < 0) {
                     this.log.warn('player.volume state change. Invalid state value passed');
                     break;
                 }
                 this.sendCmd(`volume&volume=${state.val}`);
+                this.playerState.volume = state.val as number;
+                this.setStateAsync('playbackInfo.volume', state.val as number, true);
                 break;
             case 'player.volume.down':
                 this.sendCmd('volume&minus');
@@ -200,8 +222,44 @@ class Volumio extends utils.Adapter {
             case 'queue.repeatTrack':
                 this.sendCmd('repeat');
                 break;
+            case 'playbackInfo.random':
+            case 'queue.random':
+                if (typeof state?.val !== 'boolean') {
+                    this.log.warn('player.random state change. Invalid state value passed');
+                    break;
+                }
+                this.sendCmd(`random&value=${state.val}`);
+                this.playerState.random = state.val;
+                this.setStateAsync('queue.shuffleMode', (state.val ? 1 : 0), true);
+                break;
+            case 'queue.shuffleMode':
+                if (!isNumber(state.val)) {
+                    this.log.warn('queue.shuffleMode state change. Invalid state value passed');
+                    break;
+                }
+                if (state.val === 0) {
+                    this.sendCmd('random&value=false');
+                    this.sendCmd('repeat&value=false');
+                    this.playerState.random = false;
+                    this.playerState.repeat = false;
+                    this.playerState.repeatSingle = false;
+                    this.setStateAsync('queue.random', false, true);
+                    this.setStateAsync('queue.repeatTrackState', false, true);
+                    this.setStateAsync('playbackInfo.random', false, true);
+                    this.setStateAsync('playbackInfo.repeat', false, true);
+                    this.setStateAsync('playbackInfo.repeatSingle', false, true);
+                } else if (state.val === 1) {
+                    this.sendCmd('random&value=true');
+                    this.playerState.random = true;
+                    this.setStateAsync('queue.random', true, true);
+                } else if (state.val === 2) {
+                    this.log.warn('queue.shuffleMode 2 not implemented yet');
+                } else {
+                    throw new Error('Invalid value passed');
+                }
+                break;
             case 'queue.repeatTrackState':
-                if(!state.val || typeof state.val !== 'boolean') {
+                if (typeof state?.val !== 'boolean') {
                     this.log.warn('player.repeatTrackState state change. Invalid state value passed');
                     break;
                 }
@@ -209,16 +267,14 @@ class Volumio extends utils.Adapter {
                 this.playerState.repeat = state.val;
                 break;
         }
-
-
     }
 
-    async sendCmd<T>(cmd: string) : Promise<T> {
-        return this.apiGet<T>(`?cmd=${cmd}`);
+    sendCmd<T>(cmd: string): Promise<T> {
+        return this.apiGet<T>(`commands/?cmd=${cmd}`);
     }
 
     async apiGet<T>(url: string): Promise<T> {
-        return await this.axiosInstance.get(url).then( res => {
+        return await this.axiosInstance.get(url).then(res => {
             if (!res.status) {
                 throw new Error(res.statusText)
             }
@@ -226,43 +282,44 @@ class Volumio extends utils.Adapter {
         });
     }
 
-    async updatePlayerState() : Promise<void> {
-        this.playerState = await this.apiGet<PlayerState>('getState');
-        this.propagatePlayserStateIntoStates(this.playerState);
+    updatePlayerState(): void {
+        this.apiGet<PlayerState>('getState').then(p => {
+            this.playerState = p;
+            this.propagatePlayserStateIntoStates(this.playerState);
+        });
     }
 
-    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-    async propagatePlayserStateIntoStates(playerState: PlayerState) {
-        await this.setStateAsync('playbackInfo.album', playerState.album);
-        await this.setStateAsync('playbackInfo.albumart', playerState.albumart);
-        await this.setStateAsync('playbackInfo.artist', playerState.artist);
-        await this.setStateAsync('playbackInfo.bitdepth', playerState.bitdepth);
-        await this.setStateAsync('playbackInfo.channels', playerState.channels);
-        await this.setStateAsync('playbackInfo.consume', playerState.consume);
-        await this.setStateAsync('playbackInfo.disableVolumeControl', playerState.disableVolumeControl);
-        await this.setStateAsync('playbackInfo.duration', playerState.duration);
-        await this.setStateAsync('player.muted', playerState.mute);
-        await this.setStateAsync('playbackInfo.mute', playerState.mute);
-        await this.setStateAsync('playbackInfo.position', playerState.position);
-        await this.setStateAsync('playbackInfo.random', playerState.random);
-        await this.setStateAsync('playbackInfo.repeat', playerState.repeat);
-        await this.setStateAsync('playbackInfo.repeatSingle', playerState.repeatSingle);
-        await this.setStateAsync('queue.repeatTrackState', playerState.repeatSingle);
-        await this.setStateAsync('playbackInfo.samplerate', playerState.samplerate);
-        await this.setStateAsync('playbackInfo.seek', playerState.seek);
-        await this.setStateAsync('playbackInfo.service', playerState.service);
-        await this.setStateAsync('playbackInfo.status', playerState.status);
-        await this.setStateAsync('playbackInfo.stream', playerState.stream);
-        await this.setStateAsync('playbackInfo.title', playerState.title);
-        await this.setStateAsync('playbackInfo.title', playerState.title);
-        await this.setStateAsync('playbackInfo.title', playerState.title);
-        await this.setStateAsync('playbackInfo.trackType', playerState.trackType);
-        await this.setStateAsync('playbackInfo.updatedb', playerState.updatedb);
-        await this.setStateAsync('playbackInfo.uri', playerState.uri);
-        await this.setStateAsync('playbackInfo.title', playerState.title);
-        await this.setStateAsync('playbackInfo.volatile', playerState.volatile);
-        await this.setStateAsync('playbackInfo.volume', playerState.volume);
-        await this.setStateAsync('player.volume', playerState.volume);
+    propagatePlayserStateIntoStates(playerState: PlayerState): void {
+        this.setStateAsync('playbackInfo.album', playerState.album);
+        this.setStateAsync('playbackInfo.albumart', playerState.albumart);
+        this.setStateAsync('playbackInfo.artist', playerState.artist);
+        this.setStateAsync('playbackInfo.bitdepth', playerState.bitdepth);
+        this.setStateAsync('playbackInfo.channels', playerState.channels);
+        this.setStateAsync('playbackInfo.consume', playerState.consume);
+        this.setStateAsync('playbackInfo.disableVolumeControl', playerState.disableVolumeControl);
+        this.setStateAsync('playbackInfo.duration', playerState.duration);
+        this.setStateAsync('player.muted', playerState.mute);
+        this.setStateAsync('playbackInfo.mute', playerState.mute);
+        this.setStateAsync('playbackInfo.position', playerState.position);
+        this.setStateAsync('playbackInfo.random', playerState.random);
+        this.setStateAsync('playbackInfo.repeat', playerState.repeat);
+        this.setStateAsync('playbackInfo.repeatSingle', playerState.repeatSingle);
+        this.setStateAsync('queue.repeatTrackState', playerState.repeatSingle);
+        this.setStateAsync('playbackInfo.samplerate', playerState.samplerate);
+        this.setStateAsync('playbackInfo.seek', playerState.seek);
+        this.setStateAsync('playbackInfo.service', playerState.service);
+        this.setStateAsync('playbackInfo.status', playerState.status);
+        this.setStateAsync('playbackInfo.stream', playerState.stream);
+        this.setStateAsync('playbackInfo.title', playerState.title);
+        this.setStateAsync('playbackInfo.title', playerState.title);
+        this.setStateAsync('playbackInfo.title', playerState.title);
+        this.setStateAsync('playbackInfo.trackType', playerState.trackType);
+        this.setStateAsync('playbackInfo.updatedb', playerState.updatedb);
+        this.setStateAsync('playbackInfo.uri', playerState.uri);
+        this.setStateAsync('playbackInfo.title', playerState.title);
+        this.setStateAsync('playbackInfo.volatile', playerState.volatile);
+        this.setStateAsync('playbackInfo.volume', playerState.volume);
+        this.setStateAsync('player.volume', playerState.volume);
     }
     // If you need to accept messages in your adapter, uncomment the following block and the corresponding line in the constructor.
     // /**
@@ -283,13 +340,11 @@ class Volumio extends utils.Adapter {
 
 }
 
-function isNumber(value: any): boolean
-{
+function isNumber(value: any): boolean {
     return ((value != null) &&
-           (value !== '') &&
-           !isNaN(Number(value.toString())));
+        (value !== '') &&
+        !isNaN(Number(value.toString())));
 }
-
 
 
 if (module.parent) {
