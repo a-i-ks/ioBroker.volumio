@@ -125,7 +125,6 @@ class Volumio extends utils.Adapter {
      * Is called when adapter shuts down - callback has to be called under any circumstances!
      */
     onUnload(callback) {
-        // unsu
         this.unsubscribeFromVolumioNotifications();
         try {
             // Here you must clear all timeouts or intervals that may still be active
@@ -352,6 +351,7 @@ class Volumio extends utils.Adapter {
         // check if already subscribed
         const urls = await this.apiGet('pushNotificationUrls');
         this.log.info(urls);
+        this.log.info(`${ip_1.default.address()}:${this.config.subscriptionPort}`);
         if (urls.includes(`${ip_1.default.address()}:${this.config.subscriptionPort}`)) {
             this.log.debug('Already subscribed to volumio push notifications');
             return;
