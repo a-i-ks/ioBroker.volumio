@@ -30,6 +30,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const utils = __importStar(require("@iobroker/adapter-core"));
 const axios_1 = __importDefault(require("axios"));
 const express_1 = __importDefault(require("express"));
+const body_parser_1 = __importDefault(require("body-parser"));
+const ip_1 = __importDefault(require("ip"));
 // Load your modules here, e.g.:
 // import * as fs from "fs";
 class Volumio extends utils.Adapter {
@@ -46,6 +48,8 @@ class Volumio extends utils.Adapter {
         this.axiosInstance = axios_1.default.create();
         this.playerState = {};
         this.httpServer = express_1.default();
+        this.httpServer.use(body_parser_1.default.urlencoded({ extended: false }));
+        this.httpServer.use(body_parser_1.default.json());
     }
     /**
      * Is called when databases are connected and adapter received configuration.
@@ -57,17 +61,22 @@ class Volumio extends utils.Adapter {
         this.axiosInstance = axios_1.default.create({
             baseURL: `http://${this.config.host}/api/v1/`,
             timeout: 1000
-            // headers: {'X-Custom-Header': 'foobar'}
         });
-        if (this.config.subscribeToStateChanges && this.config.port) {
+        if (this.config.subscribeToStateChanges && this.config.subscriptionPort) {
             this.log.debug('Subscription mode is activated');
-            this.httpServer.listen(this.config.port);
+            this.httpServer.listen(this.config.subscriptionPort);
+            this.log.debug(`Server is listening on ${ip_1.default.address()}:${this.config.subscriptionPort}`);
+            this.subscribeToVolumioNotifications();
         }
-        else if (this.config.subscribeToStateChanges && !this.config.port) {
+        else if (this.config.subscribeToStateChanges && !this.config.subscriptionPort) {
             this.log.error('Subscription mode is activated, but port is not configured.');
         }
-        this.httpServer.get('/volumiostatus', (req, res) => {
-            res.send('Hello World!');
+        else if (!this.config.subscribeToStateChanges) {
+            this.unsubscribeFromVolumioNotifications();
+        }
+        this.httpServer.post('/volumiostatus', (req, res) => {
+            this.log.info(`body: ` + req.body);
+            res.sendStatus(200);
         });
         // The adapters config (in the instance object everything under the attribute "native") is accessible via
         // this.config:
@@ -116,6 +125,8 @@ class Volumio extends utils.Adapter {
      * Is called when adapter shuts down - callback has to be called under any circumstances!
      */
     onUnload(callback) {
+        // unsu
+        this.unsubscribeFromVolumioNotifications();
         try {
             // Here you must clear all timeouts or intervals that may still be active
             // clearTimeout(timeout1);
@@ -278,7 +289,23 @@ class Volumio extends utils.Adapter {
     async apiGet(url) {
         return await this.axiosInstance.get(url).then(res => {
             if (!res.status) {
-                throw new Error(res.statusText);
+                throw new Error(`Error during GET on ${url}: ${res.statusText}`);
+            }
+            return res.data;
+        });
+    }
+    async apiPost(url, data) {
+        return await this.axiosInstance.post(url, data).then(res => {
+            if (!res.status) {
+                throw new Error(`Error during POST on ${url}: ${res.statusText}`);
+            }
+            return res.data;
+        });
+    }
+    async apiDelete(url, data) {
+        return await this.axiosInstance.post(url, data).then(res => {
+            if (!res.status) {
+                throw new Error(`Error during DELETE on ${url}: ${res.statusText}`);
             }
             return res.data;
         });
@@ -321,6 +348,35 @@ class Volumio extends utils.Adapter {
         this.setStateAsync('playbackInfo.volume', playerState.volume);
         this.setStateAsync('player.volume', playerState.volume);
     }
+    async subscribeToVolumioNotifications() {
+        // check if already subscribed
+        const urls = await this.apiGet('pushNotificationUrls');
+        this.log.info(urls);
+        if (urls.includes(`${ip_1.default.address()}:${this.config.subscriptionPort}`)) {
+            this.log.debug('Already subscribed to volumio push notifications');
+            return;
+        }
+        // enter local http server as notification url
+        const data = { 'url': `http://${ip_1.default.address()}:${this.config.subscriptionPort}/volumiostatus` };
+        const res = await this.apiPost('pushNotificationUrls', data);
+        if (!res || !res.success || res.success !== true) {
+            this.log.error(`Binding subscription url failed: ${res.error ? res.error : 'Unknown error'}`);
+        }
+    }
+    async unsubscribeFromVolumioNotifications() {
+        // check if was subscribed
+        const urls = await this.apiGet('pushNotificationUrls');
+        if (!urls.includes(`${ip_1.default.address()}:${this.config.subscriptionPort}`)) {
+            this.log.debug('Subscription was not active. No need to unsubscribe');
+            return;
+        }
+        // remove local http server from notification urls
+        const data = { 'url': `http://${ip_1.default.address()}:${this.config.subscriptionPort}/volumiostatus` };
+        const res = await this.apiDelete('pushNotificationUrls', data);
+        if (!res || !res.success || res.success !== true) {
+            this.log.error(`Removing subscription url failed: ${res.error ? res.error : 'Unknown error'}`);
+        }
+    }
 }
 Volumio.namespace = 'volumio.0.';
 function isNumber(value) {
@@ -336,4 +392,3 @@ else {
     // otherwise start the instance directly
     (() => new Volumio())();
 }
-//# sourceMappingURL=main.js.map

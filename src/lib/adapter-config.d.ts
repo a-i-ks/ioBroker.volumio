@@ -6,7 +6,7 @@ declare global {
         interface AdapterConfig {
             host: string;
             subscribeToStateChanges: boolean;
-            port: number;
+            subscriptionPort: number;
         }
     }
 }
