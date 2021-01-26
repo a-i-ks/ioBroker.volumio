@@ -8,7 +8,7 @@ import * as utils from '@iobroker/adapter-core';
 import { PlayerState } from './types';
 import axios, { AxiosInstance } from 'axios';
 import express from 'express';
-import bodyParser from 'body-parser'
+import bodyParser from 'body-parser';
 import ipInfo from 'ip';
 
 // Load your modules here, e.g.:
@@ -123,7 +123,6 @@ class Volumio extends utils.Adapter {
      * Is called when adapter shuts down - callback has to be called under any circumstances!
      */
     private onUnload(callback: () => void): void {
-        // unsu
         this.unsubscribeFromVolumioNotifications();
         try {
             // Here you must clear all timeouts or intervals that may still be active
@@ -287,7 +286,7 @@ class Volumio extends utils.Adapter {
     async apiGet<T>(url: string): Promise<T> {
         return await this.axiosInstance.get(url).then(res => {
             if (!res.status) {
-                throw new Error(`Error during GET on ${url}: ${res.statusText}`)
+                throw new Error(`Error during GET on ${url}: ${res.statusText}`);
             }
             return res.data;
         });
@@ -296,7 +295,7 @@ class Volumio extends utils.Adapter {
     async apiPost<T>(url: string, data?: any): Promise<T> {
         return await this.axiosInstance.post(url, data).then(res => {
             if (!res.status) {
-                throw new Error(`Error during POST on ${url}: ${res.statusText}`)
+                throw new Error(`Error during POST on ${url}: ${res.statusText}`);
             }
             return res.data;
         });
@@ -355,6 +354,7 @@ class Volumio extends utils.Adapter {
         // check if already subscribed
         const urls = await this.apiGet<string>('pushNotificationUrls');
         this.log.info(urls);
+        this.log.info(`${ipInfo.address()}:${this.config.subscriptionPort}`);
         if (urls.includes(`${ipInfo.address()}:${this.config.subscriptionPort}`)) {
             this.log.debug('Already subscribed to volumio push notifications');
             return;
@@ -369,10 +369,10 @@ class Volumio extends utils.Adapter {
 
     async unsubscribeFromVolumioNotifications(): Promise<void> {
         // check if was subscribed
-        const urls = await this.apiGet<string>('pushNotificationUrls');
+        const urls = await this.apiGet<string>('pushNotificationUrls')
         if (!urls.includes(`${ipInfo.address()}:${this.config.subscriptionPort}`)) {
-            this.log.debug('Subscription was not active. No need to unsubscribe');
-            return;
+            this.log.debug('Subscription was not active. No need to unsubscribe')
+            return
         }
         // remove local http server from notification urls
         const data = {'url':`http://${ipInfo.address()}:${this.config.subscriptionPort}/volumiostatus`};
