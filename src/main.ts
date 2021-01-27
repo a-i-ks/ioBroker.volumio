@@ -307,7 +307,7 @@ class Volumio extends utils.Adapter {
     }
 
     async apiDelete<ReqT,ResT>(url: string, data?: any): Promise<ResT> {
-        return await this.axiosInstance.post<ReqT, AxiosResponse<ResT>>(url, data).then(res => {
+        return await this.axiosInstance.delete<ReqT, AxiosResponse<ResT>>(url, data).then(res => {
             if (!res.status) {
                 throw new Error(`Error during DELETE on ${url}: ${res.statusText}`)
             }
