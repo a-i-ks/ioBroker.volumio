@@ -5,11 +5,12 @@
 // The adapter-core module gives you access to the core ioBroker functions
 // you need to create an adapter
 import * as utils from '@iobroker/adapter-core';
-import { PlayerState } from './types';
-import axios, { AxiosInstance } from 'axios';
+import { PlayerState, StateChangeMsg } from './types';
+import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import express from 'express';
 import bodyParser from 'body-parser';
 import ipInfo from 'ip';
+import e from 'express';
 
 // Load your modules here, e.g.:
 // import * as fs from "fs";
@@ -54,7 +55,11 @@ class Volumio extends utils.Adapter {
 
         if (this.config.subscribeToStateChanges && this.config.subscriptionPort) {
             this.log.debug('Subscription mode is activated');
-            this.httpServer.listen(this.config.subscriptionPort);
+            try {
+                this.httpServer.listen(this.config.subscriptionPort);
+            } catch (error) {
+                this.log.error(`Starting server on ${this.config.subscriptionPort} for subscription mode  failed: ${error.message}`);
+            }
             this.log.debug(`Server is listening on ${ipInfo.address()}:${this.config.subscriptionPort}`);
             this.subscribeToVolumioNotifications();
         } else if (this.config.subscribeToStateChanges && !this.config.subscriptionPort) {
@@ -64,7 +69,7 @@ class Volumio extends utils.Adapter {
         }
 
         this.httpServer.post('/volumiostatus', (req, res) => {
-            this.log.info(`body: `+req.body);
+            this.onVolumioStateChange(req.body)
             res.sendStatus(200);
         });
 
@@ -279,34 +284,34 @@ class Volumio extends utils.Adapter {
         }
     }
 
-    sendCmd<T>(cmd: string): Promise<T> {
-        return this.apiGet<T>(`commands/?cmd=${cmd}`);
+    sendCmd<ResT>(cmd: string): Promise<ResT> {
+        return this.apiGet<ResT>(`commands/?cmd=${cmd}`);
     }
 
-    async apiGet<T>(url: string): Promise<T> {
-        return await this.axiosInstance.get(url).then(res => {
+    async apiGet<ResT>(url: string): Promise<ResT> {
+        return await this.axiosInstance.get<any, AxiosResponse<ResT>>(url).then(res => {
             if (!res.status) {
                 throw new Error(`Error during GET on ${url}: ${res.statusText}`);
             }
-            return res.data;
+            return res.data as ResT;
         });
     }
 
-    async apiPost<T>(url: string, data?: any): Promise<T> {
-        return await this.axiosInstance.post(url, data).then(res => {
+    async apiPost<ReqT,ResT>(url: string, data?: any): Promise<ResT> {
+        return await this.axiosInstance.post<ReqT, AxiosResponse<ResT>>(url, data).then(res => {
             if (!res.status) {
                 throw new Error(`Error during POST on ${url}: ${res.statusText}`);
             }
-            return res.data;
+            return res.data as ResT;
         });
     }
 
-    async apiDelete<T>(url: string, data?: any): Promise<T> {
-        return await this.axiosInstance.post(url, data).then(res => {
+    async apiDelete<ReqT,ResT>(url: string, data?: any): Promise<ResT> {
+        return await this.axiosInstance.post<ReqT, AxiosResponse<ResT>>(url, data).then(res => {
             if (!res.status) {
                 throw new Error(`Error during DELETE on ${url}: ${res.statusText}`)
             }
-            return res.data;
+            return res.data as ResT;
         });
     }
 
@@ -352,9 +357,7 @@ class Volumio extends utils.Adapter {
 
     async subscribeToVolumioNotifications(): Promise<void> {
         // check if already subscribed
-        const urls = await this.apiGet<string>('pushNotificationUrls');
-        this.log.info(urls);
-        this.log.info(`${ipInfo.address()}:${this.config.subscriptionPort}`);
+        const urls = JSON.stringify(await this.apiGet<string>('pushNotificationUrls'));
         if (urls.includes(`${ipInfo.address()}:${this.config.subscriptionPort}`)) {
             this.log.debug('Already subscribed to volumio push notifications');
             return;
@@ -369,7 +372,7 @@ class Volumio extends utils.Adapter {
 
     async unsubscribeFromVolumioNotifications(): Promise<void> {
         // check if was subscribed
-        const urls = await this.apiGet<string>('pushNotificationUrls')
+        const urls = JSON.stringify(await this.apiGet<string>('pushNotificationUrls'));
         if (!urls.includes(`${ipInfo.address()}:${this.config.subscriptionPort}`)) {
             this.log.debug('Subscription was not active. No need to unsubscribe')
             return
@@ -379,6 +382,22 @@ class Volumio extends utils.Adapter {
         const res = await this.apiDelete('pushNotificationUrls',data) as any;
         if (!res || !res.success || res.success !== true) {
             this.log.error(`Removing subscription url failed: ${res.error ? res.error : 'Unknown error'}`);
+        }
+    }
+
+    onVolumioStateChange(msg : StateChangeMsg) : void {
+        if (!msg || !msg.item) {
+            this.log.warn(`Unprocessable state change message received: ${JSON.stringify(msg)}`);
+            return;
+        }
+        if (msg.item === 'state') {
+            this.log.info('state change:');
+            this.log.info(JSON.stringify(msg.data as PlayerState));
+        } else if (msg.item === 'queue') {
+            this.log.info('queue change:');
+            this.log.info(JSON.stringify(msg.data as PlayerState));
+        } else {
+            this.log.warn(`Unknown state change event: '${msg.data}'`);
         }
     }
     // If you need to accept messages in your adapter, uncomment the following block and the corresponding line in the constructor.

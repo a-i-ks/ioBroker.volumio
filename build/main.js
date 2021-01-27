@@ -64,7 +64,12 @@ class Volumio extends utils.Adapter {
         });
         if (this.config.subscribeToStateChanges && this.config.subscriptionPort) {
             this.log.debug('Subscription mode is activated');
-            this.httpServer.listen(this.config.subscriptionPort);
+            try {
+                this.httpServer.listen(this.config.subscriptionPort);
+            }
+            catch (error) {
+                this.log.error(`Starting server on ${this.config.subscriptionPort} for subscription mode  failed: ${error.message}`);
+            }
             this.log.debug(`Server is listening on ${ip_1.default.address()}:${this.config.subscriptionPort}`);
             this.subscribeToVolumioNotifications();
         }
@@ -75,7 +80,8 @@ class Volumio extends utils.Adapter {
             this.unsubscribeFromVolumioNotifications();
         }
         this.httpServer.post('/volumiostatus', (req, res) => {
-            this.log.info(`body: ` + req.body);
+            this.onVolumioStateChange(req.body);
+            this.log.info(`body: ` + JSON.stringify(req.body));
             res.sendStatus(200);
         });
         // The adapters config (in the instance object everything under the attribute "native") is accessible via
@@ -349,9 +355,7 @@ class Volumio extends utils.Adapter {
     }
     async subscribeToVolumioNotifications() {
         // check if already subscribed
-        const urls = await this.apiGet('pushNotificationUrls');
-        this.log.info(urls);
-        this.log.info(`${ip_1.default.address()}:${this.config.subscriptionPort}`);
+        const urls = JSON.stringify(await this.apiGet('pushNotificationUrls'));
         if (urls.includes(`${ip_1.default.address()}:${this.config.subscriptionPort}`)) {
             this.log.debug('Already subscribed to volumio push notifications');
             return;
@@ -365,7 +369,7 @@ class Volumio extends utils.Adapter {
     }
     async unsubscribeFromVolumioNotifications() {
         // check if was subscribed
-        const urls = await this.apiGet('pushNotificationUrls');
+        const urls = JSON.stringify(await this.apiGet('pushNotificationUrls'));
         if (!urls.includes(`${ip_1.default.address()}:${this.config.subscriptionPort}`)) {
             this.log.debug('Subscription was not active. No need to unsubscribe');
             return;
@@ -375,6 +379,23 @@ class Volumio extends utils.Adapter {
         const res = await this.apiDelete('pushNotificationUrls', data);
         if (!res || !res.success || res.success !== true) {
             this.log.error(`Removing subscription url failed: ${res.error ? res.error : 'Unknown error'}`);
+        }
+    }
+    onVolumioStateChange(msg) {
+        if (!msg || !msg.item) {
+            this.log.warn(`Unprocessable state change message received: ${JSON.stringify(msg)}`);
+            return;
+        }
+        if (msg.item === 'state') {
+            this.log.info('state change:');
+            this.log.info(JSON.stringify(msg.data));
+        }
+        else if (msg.item === 'queue') {
+            this.log.info('queue change:');
+            this.log.info(JSON.stringify(msg.data));
+        }
+        else {
+            this.log.warn(`Unknown state change event: '${msg.data}'`);
         }
     }
 }

@@ -24,3 +24,25 @@ export interface PlayerState {
     volatile: boolean;
     service: string;
 }
+
+export interface QueueObj {
+    uri: string;
+    service: string;
+    name: string;
+    artist: string;
+    album: string;
+    type: string;
+    tracknumber: number;
+    albumart: string;
+    duration: number;
+    samplerate: string;
+    bitdepth: string;
+    trackType: string;
+    channels: number;
+}
+
+
+export interface StateChangeMsg {
+    item: string,
+    data: PlayerState | QueueObj[]
+}
