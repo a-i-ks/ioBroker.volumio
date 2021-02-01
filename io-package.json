@@ -84,6 +84,118 @@
     "objects": [],
     "instanceObjects": [
         {
+            "_id": "info.connection",
+            "type": "state",
+            "common": {
+                "role": "indicator.connected",
+                "name": "Connection state to Volumio instance",
+                "type": "boolean",
+                "read": true,
+                "write": false,
+                "def": false
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.id",
+            "type": "state",
+            "common": {
+                "role": "value",
+                "name": "Volumio Id",
+                "type": "string",
+                "read": true,
+                "write": false
+            }
+        },
+        {
+            "_id": "info.host",
+            "type": "state",
+            "common": {
+                "role": "value",
+                "name": "Volumio host address",
+                "type": "string",
+                "read": true,
+                "write": false
+            }
+        },
+        {
+            "_id": "info.name",
+            "type": "state",
+            "common": {
+                "role": "value",
+                "name": "Volumio instance name",
+                "type": "string",
+                "read": true,
+                "write": false
+            }
+        },
+        {
+            "_id": "info.type",
+            "type": "state",
+            "common": {
+                "role": "value",
+                "name": "Volumio instance type",
+                "type": "string",
+                "read": true,
+                "write": false
+            }
+        },
+        {
+            "_id": "info.serviceName",
+            "type": "state",
+            "common": {
+                "role": "value",
+                "name": "Volumio service name",
+                "type": "string",
+                "read": true,
+                "write": false
+            }
+        },
+        {
+            "_id": "info.systemversion",
+            "type": "state",
+            "common": {
+                "role": "value",
+                "name": "Volumio system version",
+                "type": "string",
+                "read": true,
+                "write": false
+            }
+        },
+        {
+            "_id": "info.builddate",
+            "type": "state",
+            "common": {
+                "role": "value",
+                "name": "Volumio system version build date",
+                "type": "string",
+                "read": true,
+                "write": false
+            }
+        },
+        {
+            "_id": "info.variant",
+            "type": "state",
+            "common": {
+                "role": "value",
+                "name": "Volumio system variant",
+                "type": "string",
+                "read": true,
+                "write": false
+            }
+        },
+        {
+            "_id": "info.variant",
+            "type": "state",
+            "common": {
+                "role": "value",
+                "name": "Volumio system hardware",
+                "type": "string",
+                "read": true,
+                "write": false
+            }
+        },
+        {
             "_id": "player",
             "type": "channel",
             "common": {

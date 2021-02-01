@@ -41,8 +41,19 @@ export interface QueueObj {
     channels: number;
 }
 
-
 export interface StateChangeMsg {
     item: string,
     data: PlayerState | QueueObj[]
+}
+
+export interface VolumioSystemInfo {
+    id: string;
+    host: string;
+    name: string;
+    type: string;
+    serviceName: string;
+    systemversion: string;
+    builddate: string;
+    variant: string;
+    hardware: string;
 }

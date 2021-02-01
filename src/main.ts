@@ -5,12 +5,11 @@
 // The adapter-core module gives you access to the core ioBroker functions
 // you need to create an adapter
 import * as utils from '@iobroker/adapter-core';
-import { PlayerState, StateChangeMsg } from './types';
+import { PlayerState, StateChangeMsg, VolumioSystemInfo } from './types';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import express from 'express';
 import bodyParser from 'body-parser';
 import ipInfo from 'ip';
-import e from 'express';
 
 // Load your modules here, e.g.:
 // import * as fs from "fs";
@@ -53,18 +52,47 @@ class Volumio extends utils.Adapter {
             timeout: 1000
         });
 
-        if (this.config.subscribeToStateChanges && this.config.subscriptionPort) {
+        // try to ping volumio
+        let connectionSuccess = false;
+        try {
+            const pingResp = await this.apiGet<string>('ping');
+            connectionSuccess = true;
+            this.setStateAsync('info.connection', true, true);
+            if (pingResp !== 'pong') {
+                this.log.warn(`Volumio API did not respond correctly to ping. Please report this issue to the developer!`);
+            }
+        } catch (error) {
+            this.log.error(`Connection to Volumio host ${this.config.host} failed: ${error.message}`);
+            this.setStateAsync('info.connection', false, true);
+        }
+
+        // get system infos
+        if(connectionSuccess) {
+            this.apiGet<VolumioSystemInfo>('getSystemInfo').then(sysInfo => {
+                this.setStateAsync('info.id', sysInfo.id, true);
+                this.setStateAsync('info.host', sysInfo.host, true);
+                this.setStateAsync('info.name', sysInfo.name, true);
+                this.setStateAsync('info.type', sysInfo.type, true);
+                this.setStateAsync('info.serviceName', sysInfo.serviceName, true);
+                this.setStateAsync('info.systemversion', sysInfo.systemversion, true);
+                this.setStateAsync('info.builddate', sysInfo.builddate, true);
+                this.setStateAsync('info.variant', sysInfo.variant, true);
+                this.setStateAsync('info.hardware', sysInfo.hardware, true);
+            });
+        }
+
+        if (this.config.subscribeToStateChanges && this.config.subscriptionPort && connectionSuccess) {
             this.log.debug('Subscription mode is activated');
             try {
                 this.httpServer.listen(this.config.subscriptionPort);
+                this.log.debug(`Server is listening on ${ipInfo.address()}:${this.config.subscriptionPort}`);
+                this.subscribeToVolumioNotifications();
             } catch (error) {
                 this.log.error(`Starting server on ${this.config.subscriptionPort} for subscription mode  failed: ${error.message}`);
             }
-            this.log.debug(`Server is listening on ${ipInfo.address()}:${this.config.subscriptionPort}`);
-            this.subscribeToVolumioNotifications();
         } else if (this.config.subscribeToStateChanges && !this.config.subscriptionPort) {
             this.log.error('Subscription mode is activated, but port is not configured.');
-        } else if (!this.config.subscribeToStateChanges) {
+        } else if (!this.config.subscribeToStateChanges && connectionSuccess) {
             this.unsubscribeFromVolumioNotifications();
         }
 
@@ -128,8 +156,8 @@ class Volumio extends utils.Adapter {
      * Is called when adapter shuts down - callback has to be called under any circumstances!
      */
     private onUnload(callback: () => void): void {
-        this.unsubscribeFromVolumioNotifications();
         try {
+            this.unsubscribeFromVolumioNotifications();
             // Here you must clear all timeouts or intervals that may still be active
             // clearTimeout(timeout1);
             // clearTimeout(timeout2);
@@ -306,10 +334,10 @@ class Volumio extends utils.Adapter {
         });
     }
 
-    async apiDelete<ReqT,ResT>(url: string, data?: any): Promise<ResT> {
-        return await this.axiosInstance.delete<ReqT, AxiosResponse<ResT>>(url, data).then(res => {
+    async apiDelete<ReqT,ResT>(url: string, reqData?: any): Promise<ResT> {
+        return await this.axiosInstance.delete<ReqT, AxiosResponse<ResT>>(url, {data: reqData}).then(res => {
             if (!res.status) {
-                throw new Error(`Error during DELETE on ${url}: ${res.statusText}`)
+                throw new Error(`Error during DELETE on ${url}: ${res.statusText}`);
             }
             return res.data as ResT;
         });
@@ -364,7 +392,7 @@ class Volumio extends utils.Adapter {
         }
         // enter local http server as notification url
         const data = {'url':`http://${ipInfo.address()}:${this.config.subscriptionPort}/volumiostatus`};
-        const res = await this.apiPost('pushNotificationUrls',data) as any;
+        const res = await this.apiPost('pushNotificationUrls', data) as any;
         if (!res || !res.success || res.success !== true) {
             this.log.error(`Binding subscription url failed: ${res.error ? res.error : 'Unknown error'}`);
         }
@@ -379,7 +407,7 @@ class Volumio extends utils.Adapter {
         }
         // remove local http server from notification urls
         const data = {'url':`http://${ipInfo.address()}:${this.config.subscriptionPort}/volumiostatus`};
-        const res = await this.apiDelete('pushNotificationUrls',data) as any;
+        const res = await this.apiDelete('pushNotificationUrls', data) as any;
         if (!res || !res.success || res.success !== true) {
             this.log.error(`Removing subscription url failed: ${res.error ? res.error : 'Unknown error'}`);
         }

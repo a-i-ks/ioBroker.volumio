@@ -62,26 +62,53 @@ class Volumio extends utils.Adapter {
             baseURL: `http://${this.config.host}/api/v1/`,
             timeout: 1000
         });
-        if (this.config.subscribeToStateChanges && this.config.subscriptionPort) {
+        // try to ping volumio
+        let connectionSuccess = false;
+        try {
+            const pingResp = await this.apiGet('ping');
+            connectionSuccess = true;
+            this.setStateAsync('info.connection', true, true);
+            if (pingResp !== 'pong') {
+                this.log.warn(`Volumio API did not respond correctly to ping. Please report this issue to the developer!`);
+            }
+        }
+        catch (error) {
+            this.log.error(`Connection to Volumio host ${this.config.host} failed: ${error.message}`);
+            this.setStateAsync('info.connection', false, true);
+        }
+        // get system infos
+        if (connectionSuccess) {
+            this.apiGet('getSystemInfo').then(sysInfo => {
+                this.setStateAsync('info.id', sysInfo.id, true);
+                this.setStateAsync('info.host', sysInfo.host, true);
+                this.setStateAsync('info.name', sysInfo.name, true);
+                this.setStateAsync('info.type', sysInfo.type, true);
+                this.setStateAsync('info.serviceName', sysInfo.serviceName, true);
+                this.setStateAsync('info.systemversion', sysInfo.systemversion, true);
+                this.setStateAsync('info.builddate', sysInfo.builddate, true);
+                this.setStateAsync('info.variant', sysInfo.variant, true);
+                this.setStateAsync('info.hardware', sysInfo.hardware, true);
+            });
+        }
+        if (this.config.subscribeToStateChanges && this.config.subscriptionPort && connectionSuccess) {
             this.log.debug('Subscription mode is activated');
             try {
                 this.httpServer.listen(this.config.subscriptionPort);
+                this.log.debug(`Server is listening on ${ip_1.default.address()}:${this.config.subscriptionPort}`);
+                this.subscribeToVolumioNotifications();
             }
             catch (error) {
                 this.log.error(`Starting server on ${this.config.subscriptionPort} for subscription mode  failed: ${error.message}`);
             }
-            this.log.debug(`Server is listening on ${ip_1.default.address()}:${this.config.subscriptionPort}`);
-            this.subscribeToVolumioNotifications();
         }
         else if (this.config.subscribeToStateChanges && !this.config.subscriptionPort) {
             this.log.error('Subscription mode is activated, but port is not configured.');
         }
-        else if (!this.config.subscribeToStateChanges) {
+        else if (!this.config.subscribeToStateChanges && connectionSuccess) {
             this.unsubscribeFromVolumioNotifications();
         }
         this.httpServer.post('/volumiostatus', (req, res) => {
             this.onVolumioStateChange(req.body);
-            this.log.info(`body: ` + JSON.stringify(req.body));
             res.sendStatus(200);
         });
         // The adapters config (in the instance object everything under the attribute "native") is accessible via
@@ -131,8 +158,8 @@ class Volumio extends utils.Adapter {
      * Is called when adapter shuts down - callback has to be called under any circumstances!
      */
     onUnload(callback) {
-        this.unsubscribeFromVolumioNotifications();
         try {
+            this.unsubscribeFromVolumioNotifications();
             // Here you must clear all timeouts or intervals that may still be active
             // clearTimeout(timeout1);
             // clearTimeout(timeout2);
@@ -307,8 +334,8 @@ class Volumio extends utils.Adapter {
             return res.data;
         });
     }
-    async apiDelete(url, data) {
-        return await this.axiosInstance.post(url, data).then(res => {
+    async apiDelete(url, reqData) {
+        return await this.axiosInstance.delete(url, { data: reqData }).then(res => {
             if (!res.status) {
                 throw new Error(`Error during DELETE on ${url}: ${res.statusText}`);
             }
