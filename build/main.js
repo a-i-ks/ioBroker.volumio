@@ -88,6 +88,9 @@ class Volumio extends utils.Adapter {
                 this.setStateAsync('info.hardware', sysInfo.hardware, true);
             });
         }
+        // get inital player state
+        this.log.info('updatePlayerState during init');
+        this.updatePlayerState();
         if (this.config.subscribeToStateChanges && this.config.subscriptionPort && connectionSuccess) {
             this.log.debug('Subscription mode is activated');
             try {
@@ -134,73 +137,50 @@ class Volumio extends utils.Adapter {
         if (!id || !state) {
             return;
         }
-        this.log.debug(`state ${id} changed: ${state.val}`);
+        if (state.ack) {
+            this.log.debug(`State change of ${id} to "${state.val}" was already acknowledged. No need for further actions`);
+            return;
+        }
         switch (id.replace(`${this.namespace}.`, ``)) {
             case 'getPlaybackInfo':
                 this.updatePlayerState();
                 break;
             case 'player.mute':
-                this.sendCmd('volume&mute');
+                this.volumeMute();
                 break;
             case 'player.unmute':
-                this.sendCmd('volume&unmute');
+                this.volumeUnmute();
                 break;
             case 'player.next':
                 this.sendCmd('next');
                 break;
-            case 'player.pause':
-                this.sendCmd('pause');
-                this.playerState.status = 'pause';
-                this.setStateAsync('playbackInfo.status', 'pause', true);
-                break;
-            case 'player.play':
-                this.sendCmd('play');
-                this.playerState.status = 'play';
-                this.setStateAsync('playbackInfo.status', 'play', true);
-                break;
-            case 'player.playN':
-                if (!isNumber(state.val)) {
-                    this.log.warn('player.playN state change. Invalid state value passed');
-                    break;
-                }
-                this.sendCmd(`play&N=${state.val}`);
-                this.playerState.status = 'play';
-                break;
             case 'player.prev':
                 this.sendCmd('prev');
                 break;
+            case 'player.pause':
+                this.playbackPause();
+                break;
+            case 'player.play':
+                this.playbackPlay();
+                break;
+            case 'player.playN':
+                this.playbackPlay(state.val);
+                break;
             case 'player.stop':
-                this.sendCmd('stop');
-                this.playerState.status = 'stop';
-                this.setStateAsync('playbackInfo.status', 'stop', true);
+                this.playbackStop();
                 break;
             case 'player.toggle':
-                this.sendCmd('toggle');
-                if (this.playerState.status == 'play') {
-                    this.playerState.status = 'pause';
-                }
-                else if (this.playerState.status == 'pause' || this.playerState.status == 'stop') {
-                    this.playerState.status = 'play';
-                }
+                this.playbackToggle();
                 break;
+            case 'playbackInfo.volume':
             case 'player.volume':
-                if (!isNumber(state.val)) {
-                    this.log.warn('player.volume state change. Invalid state value passed');
-                    break;
-                }
-                else if ((!state.val && state.val !== 0) || state.val > 100 || state.val < 0) {
-                    this.log.warn('player.volume state change. Invalid state value passed');
-                    break;
-                }
-                this.sendCmd(`volume&volume=${state.val}`);
-                this.playerState.volume = state.val;
-                this.setStateAsync('playbackInfo.volume', state.val, true);
+                this.volumeSetTo(state.val);
                 break;
             case 'player.volume.down':
-                this.sendCmd('volume&minus');
+                this.volumeDown();
                 break;
             case 'player.volume.up':
-                this.sendCmd('volume&plus');
+                this.volumeUp();
                 break;
             case 'queue.clearQueue':
                 this.sendCmd('clearQueue');
@@ -210,13 +190,7 @@ class Volumio extends utils.Adapter {
                 break;
             case 'playbackInfo.random':
             case 'queue.random':
-                if (typeof (state === null || state === void 0 ? void 0 : state.val) !== 'boolean') {
-                    this.log.warn('player.random state change. Invalid state value passed');
-                    break;
-                }
-                this.sendCmd(`random&value=${state.val}`);
-                this.playerState.random = state.val;
-                this.setStateAsync('queue.shuffleMode', (state.val ? 1 : 0), true);
+                this.setRandomPlayback(state.val);
                 break;
             case 'queue.shuffleMode':
                 if (!isNumber(state.val)) {
@@ -224,21 +198,10 @@ class Volumio extends utils.Adapter {
                     break;
                 }
                 if (state.val === 0) {
-                    this.sendCmd('random&value=false');
-                    this.sendCmd('repeat&value=false');
-                    this.playerState.random = false;
-                    this.playerState.repeat = false;
-                    this.playerState.repeatSingle = false;
-                    this.setStateAsync('queue.random', false, true);
-                    this.setStateAsync('queue.repeatTrackState', false, true);
-                    this.setStateAsync('playbackInfo.random', false, true);
-                    this.setStateAsync('playbackInfo.repeat', false, true);
-                    this.setStateAsync('playbackInfo.repeatSingle', false, true);
+                    this.setRandomPlayback(false);
                 }
                 else if (state.val === 1) {
-                    this.sendCmd('random&value=true');
-                    this.playerState.random = true;
-                    this.setStateAsync('queue.random', true, true);
+                    this.setRandomPlayback(true);
                 }
                 else if (state.val === 2) {
                     this.log.warn('queue.shuffleMode 2 not implemented yet');
@@ -261,9 +224,12 @@ class Volumio extends utils.Adapter {
         return this.apiGet(`commands/?cmd=${cmd}`);
     }
     async apiGet(url) {
-        return await this.axiosInstance.get(url).then(res => {
+        return this.axiosInstance.get(url).then(res => {
             if (!res.status) {
                 throw new Error(`Error during GET on ${url}: ${res.statusText}`);
+            }
+            else if (res.status !== 200) {
+                throw new Error(`GET on ${url} returned ${res.status}: ${res.statusText}`);
             }
             return res.data;
         });
@@ -291,36 +257,160 @@ class Volumio extends utils.Adapter {
         });
     }
     propagatePlayserStateIntoStates(playerState) {
-        this.setStateAsync('playbackInfo.album', playerState.album);
-        this.setStateAsync('playbackInfo.albumart', playerState.albumart);
-        this.setStateAsync('playbackInfo.artist', playerState.artist);
-        this.setStateAsync('playbackInfo.bitdepth', playerState.bitdepth);
-        this.setStateAsync('playbackInfo.channels', playerState.channels);
-        this.setStateAsync('playbackInfo.consume', playerState.consume);
-        this.setStateAsync('playbackInfo.disableVolumeControl', playerState.disableVolumeControl);
-        this.setStateAsync('playbackInfo.duration', playerState.duration);
-        this.setStateAsync('player.muted', playerState.mute);
-        this.setStateAsync('playbackInfo.mute', playerState.mute);
-        this.setStateAsync('playbackInfo.position', playerState.position);
-        this.setStateAsync('playbackInfo.random', playerState.random);
-        this.setStateAsync('playbackInfo.repeat', playerState.repeat);
-        this.setStateAsync('playbackInfo.repeatSingle', playerState.repeatSingle);
-        this.setStateAsync('queue.repeatTrackState', playerState.repeatSingle);
-        this.setStateAsync('playbackInfo.samplerate', playerState.samplerate);
-        this.setStateAsync('playbackInfo.seek', playerState.seek);
-        this.setStateAsync('playbackInfo.service', playerState.service);
-        this.setStateAsync('playbackInfo.status', playerState.status);
-        this.setStateAsync('playbackInfo.stream', playerState.stream);
-        this.setStateAsync('playbackInfo.title', playerState.title);
-        this.setStateAsync('playbackInfo.title', playerState.title);
-        this.setStateAsync('playbackInfo.title', playerState.title);
-        this.setStateAsync('playbackInfo.trackType', playerState.trackType);
-        this.setStateAsync('playbackInfo.updatedb', playerState.updatedb);
-        this.setStateAsync('playbackInfo.uri', playerState.uri);
-        this.setStateAsync('playbackInfo.title', playerState.title);
-        this.setStateAsync('playbackInfo.volatile', playerState.volatile);
-        this.setStateAsync('playbackInfo.volume', playerState.volume);
-        this.setStateAsync('player.volume', playerState.volume);
+        this.setStateAsync('playbackInfo.album', playerState.album, true);
+        this.setStateAsync('playbackInfo.albumart', playerState.albumart, true);
+        this.setStateAsync('playbackInfo.artist', playerState.artist, true);
+        this.setStateAsync('playbackInfo.bitdepth', playerState.bitdepth, true);
+        this.setStateAsync('playbackInfo.channels', playerState.channels, true);
+        this.setStateAsync('playbackInfo.consume', playerState.consume, true);
+        this.setStateAsync('playbackInfo.disableVolumeControl', playerState.disableVolumeControl, true);
+        this.setStateAsync('playbackInfo.duration', playerState.duration, true);
+        this.setStateAsync('player.muted', playerState.mute, true);
+        this.setStateAsync('playbackInfo.mute', playerState.mute, true);
+        this.setStateAsync('playbackInfo.position', playerState.position, true);
+        this.setStateAsync('playbackInfo.random', playerState.random, true);
+        this.setStateAsync('playbackInfo.repeat', playerState.repeat, true);
+        this.setStateAsync('playbackInfo.repeatSingle', playerState.repeatSingle, true);
+        this.setStateAsync('queue.repeatTrackState', playerState.repeatSingle, true);
+        this.setStateAsync('playbackInfo.samplerate', playerState.samplerate, true);
+        this.setStateAsync('playbackInfo.seek', playerState.seek, true);
+        this.setStateAsync('playbackInfo.service', playerState.service, true);
+        this.setStateAsync('playbackInfo.status', playerState.status, true);
+        this.setStateAsync('playbackInfo.stream', playerState.stream, true);
+        this.setStateAsync('playbackInfo.title', playerState.title, true);
+        this.setStateAsync('playbackInfo.trackType', playerState.trackType, true);
+        this.setStateAsync('playbackInfo.updatedb', playerState.updatedb, true);
+        this.setStateAsync('playbackInfo.uri', playerState.uri, true);
+        this.setStateAsync('playbackInfo.volatile', playerState.volatile, true);
+        this.setStateAsync('playbackInfo.volume', playerState.volume, true);
+        this.setStateAsync('player.volume', playerState.volume, true);
+    }
+    volumeMute() {
+        this.sendCmd('volume&volume=mute').then(r => {
+            if (r.response === 'volume Success') {
+                this.playerState.mute = true;
+                this.setStateAsync('player.muted', this.playerState.mute);
+                this.setStateAsync('playbackInfo.mute', this.playerState.mute);
+            }
+            else {
+                this.log.warn(`Playpack mute was not successful: ${r.response}`);
+            }
+        });
+    }
+    volumeUnmute() {
+        this.sendCmd('volume&volume=unmute').then(r => {
+            if (r.response === 'volume Success') {
+                this.playerState.mute = false;
+                this.setStateAsync('player.muted', this.playerState.mute);
+                this.setStateAsync('playbackInfo.mute', this.playerState.mute);
+            }
+            else {
+                this.log.warn(`Playpack unmute was not successful: ${r.response}`);
+            }
+        });
+    }
+    playbackPause() {
+        this.sendCmd('pause').then(r => {
+            if (r.response === 'pause Success') {
+                this.playerState.status = 'pause';
+                this.setStateAsync('playbackInfo.status', 'pause', true);
+            }
+            else {
+                this.log.warn(`Playpack pause was not successful: ${r.response}`);
+            }
+        });
+    }
+    playbackPlay(n) {
+        if (n && !isNumber(n)) {
+            this.log.warn('player.playN state change. Invalid state value passed');
+            return;
+        }
+        const cmdTxt = `play${n ? (`&N=${n}`) : ``}`;
+        this.sendCmd(cmdTxt).then(r => {
+            if (r.response === 'play Success') {
+                this.playerState.status = 'play';
+                this.setStateAsync('playbackInfo.status', 'play', true);
+            }
+            else {
+                this.log.warn(`Playpack play was not successful: ${r.response}`);
+            }
+        });
+    }
+    playbackStop() {
+        this.sendCmd('stop').then(r => {
+            if (r.response === 'stop Success') {
+                this.playerState.status = 'stop';
+                this.setStateAsync('playbackInfo.status', 'stop', true);
+            }
+            else {
+                this.log.warn(`Playpack stop was not successful: ${r.response}`);
+            }
+        });
+    }
+    playbackToggle() {
+        this.sendCmd('toggle').then(r => {
+            if (r.response === 'toggle Success') {
+                if (this.playerState.status == 'play') {
+                    this.playerState.status = 'pause';
+                }
+                else if (this.playerState.status == 'pause' || this.playerState.status == 'stop') {
+                    this.playerState.status = 'play';
+                }
+            }
+            else {
+                this.log.warn(`Playpack toggle was not successful: ${r.response}`);
+            }
+        });
+    }
+    volumeSetTo(value) {
+        if (!isNumber(value)) {
+            this.log.warn('volume state change. Invalid state value passed');
+            return;
+        }
+        else if ((!value && value !== 0) || value > 100 || value < 0) {
+            this.log.warn('volume state change. Invalid state value passed');
+            return;
+        }
+        this.sendCmd(`volume&volume=${value}`).then(r => {
+            if (r.response === 'volume Success') {
+                this.playerState.volume = value;
+                this.setStateAsync('player.volume', value, true);
+                this.setStateAsync('playbackInfo.volume', value, true);
+            }
+            else {
+                this.log.warn(`Volume change was not successful: ${r.response}`);
+            }
+        });
+    }
+    volumeUp() {
+        if (!this.playerState.volume) { // if volume unknown set to 0
+            this.playerState.volume = 0;
+        }
+        const newVolumeValue = ((this.playerState.volume + 10) > 100) ? 100 : this.playerState.volume + 10;
+        this.volumeSetTo(newVolumeValue);
+    }
+    volumeDown() {
+        if (!this.playerState.volume) { // if volume unknown set to 10
+            this.playerState.volume = 10;
+        }
+        const newVolumeValue = ((this.playerState.volume - 10) < 0) ? 0 : this.playerState.volume - 10;
+        this.volumeSetTo(newVolumeValue);
+    }
+    setRandomPlayback(val) {
+        if (typeof val !== 'boolean') {
+            this.log.warn('player.random state change. Invalid state value passed');
+            return;
+        }
+        this.sendCmd(`random&value=${val}`).then(r => {
+            if (r.response === 'random Success') {
+                this.playerState.random = val;
+                this.setStateAsync('playbackInfo.random', this.playerState.random, true);
+                this.setStateAsync('queue.shuffleMode', (val ? 1 : 0), true);
+            }
+            else {
+                this.log.warn(`Random playback change was not successful: ${r.response}`);
+            }
+        });
     }
     async subscribeToVolumioNotifications() {
         // check if already subscribed
@@ -356,12 +446,10 @@ class Volumio extends utils.Adapter {
             return;
         }
         if (msg.item === 'state') {
-            this.log.info('state change:');
-            this.log.info(JSON.stringify(msg.data));
+            this.propagatePlayserStateIntoStates(msg.data);
         }
         else if (msg.item === 'queue') {
-            this.log.info('queue change:');
-            this.log.info(JSON.stringify(msg.data));
+            // not implemented yet
         }
         else {
             this.log.warn(`Unknown state change event: '${msg.data}'`);

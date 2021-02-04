@@ -57,3 +57,8 @@ export interface VolumioSystemInfo {
     variant: string;
     hardware: string;
 }
+
+export interface ApiResonse {
+    time: number;
+    response: string;
+}
