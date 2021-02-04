@@ -79,7 +79,6 @@ class Volumio extends utils.Adapter {
         }
 
         // get inital player state
-        this.log.info('updatePlayerState during init');
         this.updatePlayerState();
 
         if (this.config.subscribeToStateChanges && this.config.subscriptionPort && connectionSuccess) {
