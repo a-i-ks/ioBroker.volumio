@@ -185,7 +185,7 @@
             }
         },
         {
-            "_id": "info.variant",
+            "_id": "info.hardware",
             "type": "state",
             "common": {
                 "role": "value",
