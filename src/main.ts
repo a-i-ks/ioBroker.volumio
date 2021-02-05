@@ -64,7 +64,7 @@ class Volumio extends utils.Adapter {
         }
 
         // get system infos
-        if(connectionSuccess) {
+        if (connectionSuccess) {
             this.apiGet<VolumioSystemInfo>('getSystemInfo').then(sysInfo => {
                 this.setStateAsync('info.id', sysInfo.id, true);
                 this.setStateAsync('info.host', sysInfo.host, true);
@@ -224,7 +224,7 @@ class Volumio extends utils.Adapter {
         });
     }
 
-    async apiPost<ReqT,ResT>(url: string, data?: any): Promise<ResT> {
+    async apiPost<ReqT, ResT>(url: string, data?: any): Promise<ResT> {
         return await this.axiosInstance.post<ReqT, AxiosResponse<ResT>>(url, data).then(res => {
             if (!res.status) {
                 throw new Error(`Error during POST on ${url}: ${res.statusText}`);
@@ -233,8 +233,8 @@ class Volumio extends utils.Adapter {
         });
     }
 
-    async apiDelete<ReqT,ResT>(url: string, reqData?: any): Promise<ResT> {
-        return await this.axiosInstance.delete<ReqT, AxiosResponse<ResT>>(url, {data: reqData}).then(res => {
+    async apiDelete<ReqT, ResT>(url: string, reqData?: any): Promise<ResT> {
+        return await this.axiosInstance.delete<ReqT, AxiosResponse<ResT>>(url, { data: reqData }).then(res => {
             if (!res.status) {
                 throw new Error(`Error during DELETE on ${url}: ${res.statusText}`);
             }
@@ -280,7 +280,7 @@ class Volumio extends utils.Adapter {
     }
 
     volumeMute(): void {
-        this.sendCmd<ApiResonse>('volume&volume=mute').then( r => {
+        this.sendCmd<ApiResonse>('volume&volume=mute').then(r => {
             if (r.response === 'volume Success') {
                 this.playerState.mute = true;
                 this.setStateAsync('player.muted', this.playerState.mute);
@@ -292,7 +292,7 @@ class Volumio extends utils.Adapter {
     }
 
     volumeUnmute(): void {
-        this.sendCmd<ApiResonse>('volume&volume=unmute').then( r => {
+        this.sendCmd<ApiResonse>('volume&volume=unmute').then(r => {
             if (r.response === 'volume Success') {
                 this.playerState.mute = false;
                 this.setStateAsync('player.muted', this.playerState.mute);
@@ -304,7 +304,7 @@ class Volumio extends utils.Adapter {
     }
 
     playbackPause(): void {
-        this.sendCmd<ApiResonse>('pause').then( r => {
+        this.sendCmd<ApiResonse>('pause').then(r => {
             if (r.response === 'pause Success') {
                 this.playerState.status = 'pause';
                 this.setStateAsync('playbackInfo.status', 'pause', true);
@@ -320,7 +320,7 @@ class Volumio extends utils.Adapter {
             return;
         }
         const cmdTxt = `play${n ? (`&N=${n}`) : ``}`;
-        this.sendCmd<ApiResonse>(cmdTxt).then( r => {
+        this.sendCmd<ApiResonse>(cmdTxt).then(r => {
             if (r.response === 'play Success') {
                 this.playerState.status = 'play';
                 this.setStateAsync('playbackInfo.status', 'play', true);
@@ -331,7 +331,7 @@ class Volumio extends utils.Adapter {
     }
 
     playbackStop(): void {
-        this.sendCmd<ApiResonse>('stop').then( r => {
+        this.sendCmd<ApiResonse>('stop').then(r => {
             if (r.response === 'stop Success') {
                 this.playerState.status = 'stop';
                 this.setStateAsync('playbackInfo.status', 'stop', true);
@@ -342,7 +342,7 @@ class Volumio extends utils.Adapter {
     }
 
     playbackToggle(): void {
-        this.sendCmd<ApiResonse>('toggle').then( r => {
+        this.sendCmd<ApiResonse>('toggle').then(r => {
             if (r.response === 'toggle Success') {
                 if (this.playerState.status == 'play') {
                     this.playerState.status = 'pause'
@@ -364,7 +364,7 @@ class Volumio extends utils.Adapter {
             this.log.warn('volume state change. Invalid state value passed');
             return;
         }
-        this.sendCmd<ApiResonse>(`volume&volume=${value}`).then( r => {
+        this.sendCmd<ApiResonse>(`volume&volume=${value}`).then(r => {
             if (r.response === 'volume Success') {
                 this.playerState.volume = value as number;
                 this.setStateAsync('player.volume', value as number, true);
@@ -377,18 +377,18 @@ class Volumio extends utils.Adapter {
     }
 
     volumeUp(): void {
-        if(!this.playerState.volume) { // if volume unknown set to 0
+        if (!this.playerState.volume) { // if volume unknown set to 0
             this.playerState.volume = 0;
         }
-        const newVolumeValue = ((this.playerState.volume+10) > 100) ? 100 : this.playerState.volume+10;
+        const newVolumeValue = ((this.playerState.volume + 10) > 100) ? 100 : this.playerState.volume + 10;
         this.volumeSetTo(newVolumeValue);
     }
 
     volumeDown(): void {
-        if(!this.playerState.volume) { // if volume unknown set to 10
+        if (!this.playerState.volume) { // if volume unknown set to 10
             this.playerState.volume = 10;
         }
-        const newVolumeValue = ((this.playerState.volume-10) < 0) ? 0 : this.playerState.volume-10;
+        const newVolumeValue = ((this.playerState.volume - 10) < 0) ? 0 : this.playerState.volume - 10;
         this.volumeSetTo(newVolumeValue);
     }
 
@@ -397,7 +397,7 @@ class Volumio extends utils.Adapter {
             this.log.warn('player.random state change. Invalid state value passed');
             return;
         }
-        this.sendCmd<ApiResonse>(`random&value=${val}`).then( r => {
+        this.sendCmd<ApiResonse>(`random&value=${val}`).then(r => {
             if (r.response === 'random Success') {
                 this.playerState.random = val;
                 this.setStateAsync('playbackInfo.random', this.playerState.random, true);
@@ -416,7 +416,7 @@ class Volumio extends utils.Adapter {
             return;
         }
         // enter local http server as notification url
-        const data = {'url':`http://${ipInfo.address()}:${this.config.subscriptionPort}/volumiostatus`};
+        const data = { 'url': `http://${ipInfo.address()}:${this.config.subscriptionPort}/volumiostatus` };
         const res = await this.apiPost('pushNotificationUrls', data) as any;
         if (!res || !res.success || res.success !== true) {
             this.log.error(`Binding subscription url failed: ${res.error ? res.error : 'Unknown error'}`);
@@ -431,14 +431,14 @@ class Volumio extends utils.Adapter {
             return
         }
         // remove local http server from notification urls
-        const data = {'url':`http://${ipInfo.address()}:${this.config.subscriptionPort}/volumiostatus`};
+        const data = { 'url': `http://${ipInfo.address()}:${this.config.subscriptionPort}/volumiostatus` };
         const res = await this.apiDelete('pushNotificationUrls', data) as any;
         if (!res || !res.success || res.success !== true) {
             this.log.error(`Removing subscription url failed: ${res.error ? res.error : 'Unknown error'}`);
         }
     }
 
-    onVolumioStateChange(msg : StateChangeMsg) : void {
+    onVolumioStateChange(msg: StateChangeMsg): void {
         if (!msg || !msg.item) {
             this.log.warn(`Unprocessable state change message received: ${JSON.stringify(msg)}`);
             return;
