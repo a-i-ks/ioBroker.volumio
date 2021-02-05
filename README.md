@@ -54,6 +54,11 @@ Todo:
     * Switched codebase to typescript
     * Changed License to MIT
 
+## Donation
+If this adapter has helped you to realise cool automations in your SmartHome and helped you reduce time to develop, you can invite me for a cup of coffee :) 
+
+[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/donate?hosted_button_id=GHGSLC8P8MWKC)
+
 ## License
 MIT License
 
