@@ -79,7 +79,7 @@
     "native": {
         "host": "volumio.local",
         "subscribeToStateChanges": true,
-        "subscriptionPort": 3000
+        "subscriptionPort": 3042
     },
     "objects": [],
     "instanceObjects": [
