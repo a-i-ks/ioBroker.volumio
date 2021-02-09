@@ -5,18 +5,19 @@
 // The adapter-core module gives you access to the core ioBroker functions
 // you need to create an adapter
 import * as utils from '@iobroker/adapter-core';
-import { PlayerState, StateChangeMsg, VolumioSystemInfo, ApiResonse } from './types';
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import express from 'express';
 import bodyParser from 'body-parser';
+import express from 'express';
 import ipInfo from 'ip';
+import { ApiResonse, PlayerState, StateChangeMsg, VolumioSystemInfo } from './types';
 
 class Volumio extends utils.Adapter {
 
-    playerState: PlayerState;
+    private playerState: PlayerState;
     static readonly namespace = 'volumio.0.';
-    axiosInstance: AxiosInstance;
-    httpServer;
+    private axiosInstance: AxiosInstance;
+    private httpServer;
+    private checkConnectionInterval: any;
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
         super({
@@ -50,17 +51,15 @@ class Volumio extends utils.Adapter {
         });
 
         // try to ping volumio
-        let connectionSuccess = false;
-        try {
-            const pingResp = await this.apiGet<string>('ping');
-            connectionSuccess = true;
-            this.setStateAsync('info.connection', true, true);
-            if (pingResp !== 'pong') {
-                this.log.warn(`Volumio API did not respond correctly to ping. Please report this issue to the developer!`);
+        const connectionSuccess = await this.pingVolumio();
+
+        if (this.config.checkConnection) {
+            let interval = this.config.checkConnectionInterval;
+            if (!interval || !isNumber(interval)) {
+                this.log.error(`Invalid connection check interval setting. Will be set to 30s`);
+                interval = 30;
             }
-        } catch (error) {
-            this.log.error(`Connection to Volumio host ${this.config.host} failed: ${error.message}`);
-            this.setStateAsync('info.connection', false, true);
+            this.checkConnectionInterval = setInterval(this.checkConnection, interval*1000, this);
         }
 
         // get system infos
@@ -76,10 +75,9 @@ class Volumio extends utils.Adapter {
                 this.setStateAsync('info.variant', sysInfo.variant, true);
                 this.setStateAsync('info.hardware', sysInfo.hardware, true);
             });
+            // get inital player state
+            this.updatePlayerState();
         }
-
-        // get inital player state
-        this.updatePlayerState();
 
         if (this.config.subscribeToStateChanges && this.config.subscriptionPort && connectionSuccess) {
             this.log.debug('Subscription mode is activated');
@@ -88,7 +86,7 @@ class Volumio extends utils.Adapter {
                 this.log.debug(`Server is listening on ${ipInfo.address()}:${this.config.subscriptionPort}`);
                 this.subscribeToVolumioNotifications();
             } catch (error) {
-                this.log.error(`Starting server on ${this.config.subscriptionPort} for subscription mode  failed: ${error.message}`);
+                this.log.error(`Starting server on ${this.config.subscriptionPort} for subscription mode failed: ${error.message}`);
             }
         } else if (this.config.subscribeToStateChanges && !this.config.subscriptionPort) {
             this.log.error('Subscription mode is activated, but port is not configured.');
@@ -109,11 +107,10 @@ class Volumio extends utils.Adapter {
         try {
             this.unsubscribeFromVolumioNotifications();
             // Here you must clear all timeouts or intervals that may still be active
-            // clearTimeout(timeout1);
-            // clearTimeout(timeout2);
-            // ...
-            // clearInterval(interval1);
-
+            if (this.checkConnectionInterval) {
+                clearInterval(this.checkConnectionInterval);
+                this.checkConnectionInterval = null;
+            }
             callback();
         } catch (e) {
             callback();
@@ -128,7 +125,7 @@ class Volumio extends utils.Adapter {
             return;
         }
         if (state.ack) {
-            this.log.debug(`State change of ${id} to "${state.val}" was already acknowledged. No need for further actions`);
+            this.log.silly(`State change of ${id} to "${state.val}" was already acknowledged. No need for further actions`);
             return;
         }
 
@@ -195,25 +192,20 @@ class Volumio extends utils.Adapter {
                 } else if (state.val === 2) {
                     this.log.warn('queue.shuffleMode 2 not implemented yet');
                 } else {
-                    throw new Error('Invalid value passed');
+                    this.log.warn('Invalid value to queue.shuffleMode passed');
                 }
                 break;
             case 'queue.repeatTrackState':
-                if (typeof state?.val !== 'boolean') {
-                    this.log.warn('player.repeatTrackState state change. Invalid state value passed');
-                    break;
-                }
-                this.sendCmd(`repeat&value=${state.val}`);
-                this.playerState.repeat = state.val;
+                this.setRepeatTrack(state.val);
                 break;
         }
     }
 
-    sendCmd<ResT>(cmd: string): Promise<ResT> {
+    private sendCmd<ResT>(cmd: string): Promise<ResT> {
         return this.apiGet<ResT>(`commands/?cmd=${cmd}`);
     }
 
-    async apiGet<ResT>(url: string): Promise<ResT> {
+    private async apiGet<ResT>(url: string): Promise<ResT> {
         return this.axiosInstance.get<any, AxiosResponse<ResT>>(url).then(res => {
             if (!res.status) {
                 throw new Error(`Error during GET on ${url}: ${res.statusText}`);
@@ -221,35 +213,43 @@ class Volumio extends utils.Adapter {
                 throw new Error(`GET on ${url} returned ${res.status}: ${res.statusText}`)
             }
             return res.data as ResT;
+        }).catch(error => {
+            throw new Error(`Error during GET on ${url}: ${error.message}`);
         });
     }
 
-    async apiPost<ReqT, ResT>(url: string, data?: any): Promise<ResT> {
+    private async apiPost<ReqT, ResT>(url: string, data?: any): Promise<ResT> {
         return await this.axiosInstance.post<ReqT, AxiosResponse<ResT>>(url, data).then(res => {
             if (!res.status) {
                 throw new Error(`Error during POST on ${url}: ${res.statusText}`);
             }
             return res.data as ResT;
+        }).catch(error => {
+            throw new Error(`Error during POST on ${url}: ${error.message}`);
         });
     }
 
-    async apiDelete<ReqT, ResT>(url: string, reqData?: any): Promise<ResT> {
+    private async apiDelete<ReqT, ResT>(url: string, reqData?: any): Promise<ResT> {
         return await this.axiosInstance.delete<ReqT, AxiosResponse<ResT>>(url, { data: reqData }).then(res => {
             if (!res.status) {
                 throw new Error(`Error during DELETE on ${url}: ${res.statusText}`);
             }
             return res.data as ResT;
+        }).catch(error => {
+            throw new Error(`Error during DELETE on ${url}: ${error.message}`);
         });
     }
 
-    updatePlayerState(): void {
+    private updatePlayerState(): void {
         this.apiGet<PlayerState>('getState').then(p => {
             this.playerState = p;
             this.propagatePlayserStateIntoStates(this.playerState);
+        }).catch(err => {
+            this.log.error(`Error during update of player state: ${err.message}`);
         });
     }
 
-    propagatePlayserStateIntoStates(playerState: PlayerState): void {
+    private propagatePlayserStateIntoStates(playerState: PlayerState): void {
         this.setStateAsync('playbackInfo.album', playerState.album, true);
         this.setStateAsync('playbackInfo.albumart', playerState.albumart, true);
         this.setStateAsync('playbackInfo.artist', playerState.artist, true);
@@ -279,7 +279,7 @@ class Volumio extends utils.Adapter {
         this.setStateAsync('player.volume', playerState.volume, true);
     }
 
-    volumeMute(): void {
+    private volumeMute(): void {
         this.sendCmd<ApiResonse>('volume&volume=mute').then(r => {
             if (r.response === 'volume Success') {
                 this.playerState.mute = true;
@@ -291,7 +291,7 @@ class Volumio extends utils.Adapter {
         });
     }
 
-    volumeUnmute(): void {
+    private volumeUnmute(): void {
         this.sendCmd<ApiResonse>('volume&volume=unmute').then(r => {
             if (r.response === 'volume Success') {
                 this.playerState.mute = false;
@@ -303,7 +303,7 @@ class Volumio extends utils.Adapter {
         });
     }
 
-    playbackPause(): void {
+    private playbackPause(): void {
         this.sendCmd<ApiResonse>('pause').then(r => {
             if (r.response === 'pause Success') {
                 this.playerState.status = 'pause';
@@ -314,7 +314,7 @@ class Volumio extends utils.Adapter {
         });
     }
 
-    playbackPlay(n?: any): void {
+    private playbackPlay(n?: any): void {
         if (n && !isNumber(n)) {
             this.log.warn('player.playN state change. Invalid state value passed');
             return;
@@ -330,7 +330,7 @@ class Volumio extends utils.Adapter {
         });
     }
 
-    playbackStop(): void {
+    private playbackStop(): void {
         this.sendCmd<ApiResonse>('stop').then(r => {
             if (r.response === 'stop Success') {
                 this.playerState.status = 'stop';
@@ -341,7 +341,7 @@ class Volumio extends utils.Adapter {
         });
     }
 
-    playbackToggle(): void {
+    private playbackToggle(): void {
         this.sendCmd<ApiResonse>('toggle').then(r => {
             if (r.response === 'toggle Success') {
                 if (this.playerState.status == 'play') {
@@ -356,7 +356,7 @@ class Volumio extends utils.Adapter {
         });
     }
 
-    volumeSetTo(value: any): void {
+    private volumeSetTo(value: any): void {
         if (!isNumber(value)) {
             this.log.warn('volume state change. Invalid state value passed');
             return;
@@ -376,23 +376,33 @@ class Volumio extends utils.Adapter {
 
     }
 
-    volumeUp(): void {
+    private volumeUp(): void {
+        let volumeSteps = this.config.volumeSteps;
+        if (!volumeSteps || volumeSteps > 100 || volumeSteps < 0) {
+            this.log.warn(`Invalid volume step setting. volumeSteps will be set to 10`);
+            volumeSteps = 10;
+        }
         if (!this.playerState.volume) { // if volume unknown set to 0
             this.playerState.volume = 0;
         }
-        const newVolumeValue = ((this.playerState.volume + 10) > 100) ? 100 : this.playerState.volume + 10;
+        const newVolumeValue = ((this.playerState.volume + volumeSteps) > 100) ? 100 : this.playerState.volume + volumeSteps;
         this.volumeSetTo(newVolumeValue);
     }
 
-    volumeDown(): void {
+    private volumeDown(): void {
+        let volumeSteps = this.config.volumeSteps;
+        if (!volumeSteps || volumeSteps > 100 || volumeSteps < 0) {
+            this.log.warn(`Invalid volume step setting. volumeSteps will be set to 10`);
+            volumeSteps = 10;
+        }
         if (!this.playerState.volume) { // if volume unknown set to 10
             this.playerState.volume = 10;
         }
-        const newVolumeValue = ((this.playerState.volume - 10) < 0) ? 0 : this.playerState.volume - 10;
+        const newVolumeValue = ((this.playerState.volume - volumeSteps) < 0) ? 0 : this.playerState.volume - volumeSteps;
         this.volumeSetTo(newVolumeValue);
     }
 
-    setRandomPlayback(val: any): void {
+    private setRandomPlayback(val: any): void {
         if (typeof val !== 'boolean') {
             this.log.warn('player.random state change. Invalid state value passed');
             return;
@@ -408,22 +418,45 @@ class Volumio extends utils.Adapter {
         });
     }
 
-    async subscribeToVolumioNotifications(): Promise<void> {
-        // check if already subscribed
-        const urls = JSON.stringify(await this.apiGet<string>('pushNotificationUrls'));
-        if (urls.includes(`${ipInfo.address()}:${this.config.subscriptionPort}`)) {
-            this.log.debug('Already subscribed to volumio push notifications');
+    private setRepeatTrack(val: any): void {
+        if (typeof val !== 'boolean') {
+            this.log.warn('player.repeatTrackState state change. Invalid state value passed');
             return;
         }
-        // enter local http server as notification url
-        const data = { 'url': `http://${ipInfo.address()}:${this.config.subscriptionPort}/volumiostatus` };
-        const res = await this.apiPost('pushNotificationUrls', data) as any;
-        if (!res || !res.success || res.success !== true) {
-            this.log.error(`Binding subscription url failed: ${res.error ? res.error : 'Unknown error'}`);
+        this.sendCmd<ApiResonse>(`repeat&value=${val}`).then(r => {
+            if (r.response === 'repeat Success') {
+                this.playerState.repeat = val;
+            } else {
+                this.log.warn(`repeat playback change was not successful: ${r.response}`);
+            }
+        });
+    }
+
+
+    private async subscribeToVolumioNotifications(): Promise<void> {
+        // check if already subscribed
+        try {
+            this.log.debug(`Checking subscrition urls ...`);
+            const urls = JSON.stringify(await this.apiGet<string>('pushNotificationUrls').catch(err => {throw err}));
+            this.setStateAsync('info.connection', true, true);
+            if (urls.includes(`${ipInfo.address()}:${this.config.subscriptionPort}`)) {
+                this.log.debug('Already subscribed to volumio push notifications');
+                return;
+            }
+            // enter local http server as notification url
+            const data = { 'url': `http://${ipInfo.address()}:${this.config.subscriptionPort}/volumiostatus` };
+            const res = await this.apiPost('pushNotificationUrls', data).catch(err => {throw err}) as any;
+            if (!res || !res.success || res.success !== true) {
+                this.log.error(`Binding subscription url failed: ${res.error ? res.error : 'Unknown error'}`);
+                this.setStateAsync('info.connection', false, true);
+            }
+        } catch(err) {
+            this.log.warn(`No connection to Volumio: ${err.message}`);
+            this.setStateAsync('info.connection', false, true);
         }
     }
 
-    async unsubscribeFromVolumioNotifications(): Promise<void> {
+    private async unsubscribeFromVolumioNotifications(): Promise<void> {
         // check if was subscribed
         const urls = JSON.stringify(await this.apiGet<string>('pushNotificationUrls'));
         if (!urls.includes(`${ipInfo.address()}:${this.config.subscriptionPort}`)) {
@@ -438,7 +471,7 @@ class Volumio extends utils.Adapter {
         }
     }
 
-    onVolumioStateChange(msg: StateChangeMsg): void {
+    private onVolumioStateChange(msg: StateChangeMsg): void {
         if (!msg || !msg.item) {
             this.log.warn(`Unprocessable state change message received: ${JSON.stringify(msg)}`);
             return;
@@ -451,6 +484,32 @@ class Volumio extends utils.Adapter {
             this.log.warn(`Unknown state change event: '${msg.data}'`);
         }
     }
+
+    private checkConnection(context: any) : void {
+        context.log.debug('Checking connection to Volumio ...');
+        if (context.config.subscribeToStateChanges) {
+            context.subscribeToVolumioNotifications();
+        } else {
+            context.pingVolumio();
+        }
+    }
+
+    private async pingVolumio(): Promise<boolean> {
+        this.log.debug('Pinging volumio ...');
+        return this.apiGet<string>('ping').then(pingResp => {
+            this.log.debug('Ping response');
+            this.setStateAsync('info.connection', true, true);
+            if (pingResp !== 'pong') {
+                this.log.warn(`Volumio API did not respond correctly to ping. Please report this issue to the developer!`);
+            }
+            return true;
+        }).catch(err => {
+            this.log.debug(`Connection to Volumio host ${this.config.host} failed: ${err.message}`);
+            this.setStateAsync('info.connection', false, true);
+            return false;
+        });
+    }
+
     // If you need to accept messages in your adapter, uncomment the following block and the corresponding line in the constructor.
     // /**
     //  * Some message was sent to this instance over message box. Used by email, pushover, text2speech, ...

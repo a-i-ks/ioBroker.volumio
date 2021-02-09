@@ -83,7 +83,7 @@
         </div>
         <div class="section">
             <div class="row">
-                <div class="translate" for="subscribeModeDescription">The adapter can be used in a event driven fashion. Volumio can notify via POST calls when state changes. 
+                <div class="translate" for="subscriptionModeDescription">The adapter can be used in a event driven fashion. Volumio can notify via POST calls when state changes. 
                     This is a much more efficient and elegant way to retrieve informations, instead of continuously polling the relevant information. 
                 </div>
             </div>
@@ -95,6 +95,27 @@
                 <div class="input-field col s10 m4">
                     <input type="number" id="subscriptionPort" class="value" />
                     <label class="translate" for="subscriptionPort">Port</label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="translate" for="checkConnectionDescription">Check connection state</div>
+            </div>
+            <div class="row">
+                <div class="input-field col s10 m4">
+                    <input type="checkbox" id="checkConnection" class="value"/>
+                    <label class="translate" for="checkConnection">Check connection to volumio</label>
+                </div>
+                <div class="input-field col s10 m4">
+                    <input type="number" id="checkConnectionInterval" class="value" />
+                    <label class="translate" for="checkConnectionInterval">Interval in s</label>
+                </div>
+            </div>
+        </div>
+        <div class="section">
+            <div class="row">
+                <div class="input-field col s4">
+                    <input type="number" id="volumeSteps" value="10" max="100" min="0" step="1" class="value"/>
+                    <label class="translate" for="volumeSteps" >Volume step increase/decrease</label>
                 </div>
             </div>
         </div>

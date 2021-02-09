@@ -29,8 +29,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // you need to create an adapter
 const utils = __importStar(require("@iobroker/adapter-core"));
 const axios_1 = __importDefault(require("axios"));
-const express_1 = __importDefault(require("express"));
 const body_parser_1 = __importDefault(require("body-parser"));
+const express_1 = __importDefault(require("express"));
 const ip_1 = __importDefault(require("ip"));
 class Volumio extends utils.Adapter {
     constructor(options = {}) {
@@ -61,18 +61,14 @@ class Volumio extends utils.Adapter {
             timeout: 1000
         });
         // try to ping volumio
-        let connectionSuccess = false;
-        try {
-            const pingResp = await this.apiGet('ping');
-            connectionSuccess = true;
-            this.setStateAsync('info.connection', true, true);
-            if (pingResp !== 'pong') {
-                this.log.warn(`Volumio API did not respond correctly to ping. Please report this issue to the developer!`);
+        const connectionSuccess = await this.pingVolumio();
+        if (this.config.checkConnection) {
+            let interval = this.config.checkConnectionInterval;
+            if (!interval || !isNumber(interval)) {
+                this.log.error(`Invalid connection check interval setting. Will be set to 30s`);
+                interval = 30;
             }
-        }
-        catch (error) {
-            this.log.error(`Connection to Volumio host ${this.config.host} failed: ${error.message}`);
-            this.setStateAsync('info.connection', false, true);
+            this.checkConnectionInterval = setInterval(this.checkConnection, interval * 1000, this);
         }
         // get system infos
         if (connectionSuccess) {
@@ -87,9 +83,9 @@ class Volumio extends utils.Adapter {
                 this.setStateAsync('info.variant', sysInfo.variant, true);
                 this.setStateAsync('info.hardware', sysInfo.hardware, true);
             });
+            // get inital player state
+            this.updatePlayerState();
         }
-        // get inital player state
-        this.updatePlayerState();
         if (this.config.subscribeToStateChanges && this.config.subscriptionPort && connectionSuccess) {
             this.log.debug('Subscription mode is activated');
             try {
@@ -98,7 +94,7 @@ class Volumio extends utils.Adapter {
                 this.subscribeToVolumioNotifications();
             }
             catch (error) {
-                this.log.error(`Starting server on ${this.config.subscriptionPort} for subscription mode  failed: ${error.message}`);
+                this.log.error(`Starting server on ${this.config.subscriptionPort} for subscription mode failed: ${error.message}`);
             }
         }
         else if (this.config.subscribeToStateChanges && !this.config.subscriptionPort) {
@@ -119,10 +115,10 @@ class Volumio extends utils.Adapter {
         try {
             this.unsubscribeFromVolumioNotifications();
             // Here you must clear all timeouts or intervals that may still be active
-            // clearTimeout(timeout1);
-            // clearTimeout(timeout2);
-            // ...
-            // clearInterval(interval1);
+            if (this.checkConnectionInterval) {
+                clearInterval(this.checkConnectionInterval);
+                this.checkConnectionInterval = null;
+            }
             callback();
         }
         catch (e) {
@@ -137,7 +133,7 @@ class Volumio extends utils.Adapter {
             return;
         }
         if (state.ack) {
-            this.log.debug(`State change of ${id} to "${state.val}" was already acknowledged. No need for further actions`);
+            this.log.silly(`State change of ${id} to "${state.val}" was already acknowledged. No need for further actions`);
             return;
         }
         switch (id.replace(`${this.namespace}.`, ``)) {
@@ -206,16 +202,11 @@ class Volumio extends utils.Adapter {
                     this.log.warn('queue.shuffleMode 2 not implemented yet');
                 }
                 else {
-                    throw new Error('Invalid value passed');
+                    this.log.warn('Invalid value to queue.shuffleMode passed');
                 }
                 break;
             case 'queue.repeatTrackState':
-                if (typeof (state === null || state === void 0 ? void 0 : state.val) !== 'boolean') {
-                    this.log.warn('player.repeatTrackState state change. Invalid state value passed');
-                    break;
-                }
-                this.sendCmd(`repeat&value=${state.val}`);
-                this.playerState.repeat = state.val;
+                this.setRepeatTrack(state.val);
                 break;
         }
     }
@@ -231,6 +222,8 @@ class Volumio extends utils.Adapter {
                 throw new Error(`GET on ${url} returned ${res.status}: ${res.statusText}`);
             }
             return res.data;
+        }).catch(error => {
+            throw new Error(`Error during GET on ${url}: ${error.message}`);
         });
     }
     async apiPost(url, data) {
@@ -239,6 +232,8 @@ class Volumio extends utils.Adapter {
                 throw new Error(`Error during POST on ${url}: ${res.statusText}`);
             }
             return res.data;
+        }).catch(error => {
+            throw new Error(`Error during POST on ${url}: ${error.message}`);
         });
     }
     async apiDelete(url, reqData) {
@@ -247,12 +242,16 @@ class Volumio extends utils.Adapter {
                 throw new Error(`Error during DELETE on ${url}: ${res.statusText}`);
             }
             return res.data;
+        }).catch(error => {
+            throw new Error(`Error during DELETE on ${url}: ${error.message}`);
         });
     }
     updatePlayerState() {
         this.apiGet('getState').then(p => {
             this.playerState = p;
             this.propagatePlayserStateIntoStates(this.playerState);
+        }).catch(err => {
+            this.log.error(`Error during update of player state: ${err.message}`);
         });
     }
     propagatePlayserStateIntoStates(playerState) {
@@ -382,17 +381,27 @@ class Volumio extends utils.Adapter {
         });
     }
     volumeUp() {
+        let volumeSteps = this.config.volumeSteps;
+        if (!volumeSteps || volumeSteps > 100 || volumeSteps < 0) {
+            this.log.warn(`Invalid volume step setting. volumeSteps will be set to 10`);
+            volumeSteps = 10;
+        }
         if (!this.playerState.volume) { // if volume unknown set to 0
             this.playerState.volume = 0;
         }
-        const newVolumeValue = ((this.playerState.volume + 10) > 100) ? 100 : this.playerState.volume + 10;
+        const newVolumeValue = ((this.playerState.volume + volumeSteps) > 100) ? 100 : this.playerState.volume + volumeSteps;
         this.volumeSetTo(newVolumeValue);
     }
     volumeDown() {
+        let volumeSteps = this.config.volumeSteps;
+        if (!volumeSteps || volumeSteps > 100 || volumeSteps < 0) {
+            this.log.warn(`Invalid volume step setting. volumeSteps will be set to 10`);
+            volumeSteps = 10;
+        }
         if (!this.playerState.volume) { // if volume unknown set to 10
             this.playerState.volume = 10;
         }
-        const newVolumeValue = ((this.playerState.volume - 10) < 0) ? 0 : this.playerState.volume - 10;
+        const newVolumeValue = ((this.playerState.volume - volumeSteps) < 0) ? 0 : this.playerState.volume - volumeSteps;
         this.volumeSetTo(newVolumeValue);
     }
     setRandomPlayback(val) {
@@ -411,18 +420,41 @@ class Volumio extends utils.Adapter {
             }
         });
     }
-    async subscribeToVolumioNotifications() {
-        // check if already subscribed
-        const urls = JSON.stringify(await this.apiGet('pushNotificationUrls'));
-        if (urls.includes(`${ip_1.default.address()}:${this.config.subscriptionPort}`)) {
-            this.log.debug('Already subscribed to volumio push notifications');
+    setRepeatTrack(val) {
+        if (typeof val !== 'boolean') {
+            this.log.warn('player.repeatTrackState state change. Invalid state value passed');
             return;
         }
-        // enter local http server as notification url
-        const data = { 'url': `http://${ip_1.default.address()}:${this.config.subscriptionPort}/volumiostatus` };
-        const res = await this.apiPost('pushNotificationUrls', data);
-        if (!res || !res.success || res.success !== true) {
-            this.log.error(`Binding subscription url failed: ${res.error ? res.error : 'Unknown error'}`);
+        this.sendCmd(`repeat&value=${val}`).then(r => {
+            if (r.response === 'repeat Success') {
+                this.playerState.repeat = val;
+            }
+            else {
+                this.log.warn(`repeat playback change was not successful: ${r.response}`);
+            }
+        });
+    }
+    async subscribeToVolumioNotifications() {
+        // check if already subscribed
+        try {
+            this.log.debug(`Checking subscrition urls ...`);
+            const urls = JSON.stringify(await this.apiGet('pushNotificationUrls').catch(err => { throw err; }));
+            this.setStateAsync('info.connection', true, true);
+            if (urls.includes(`${ip_1.default.address()}:${this.config.subscriptionPort}`)) {
+                this.log.debug('Already subscribed to volumio push notifications');
+                return;
+            }
+            // enter local http server as notification url
+            const data = { 'url': `http://${ip_1.default.address()}:${this.config.subscriptionPort}/volumiostatus` };
+            const res = await this.apiPost('pushNotificationUrls', data).catch(err => { throw err; });
+            if (!res || !res.success || res.success !== true) {
+                this.log.error(`Binding subscription url failed: ${res.error ? res.error : 'Unknown error'}`);
+                this.setStateAsync('info.connection', false, true);
+            }
+        }
+        catch (err) {
+            this.log.warn(`No connection to Volumio: ${err.message}`);
+            this.setStateAsync('info.connection', false, true);
         }
     }
     async unsubscribeFromVolumioNotifications() {
@@ -453,6 +485,30 @@ class Volumio extends utils.Adapter {
         else {
             this.log.warn(`Unknown state change event: '${msg.data}'`);
         }
+    }
+    checkConnection(context) {
+        context.log.debug('Checking connection to Volumio ...');
+        if (context.config.subscribeToStateChanges) {
+            context.subscribeToVolumioNotifications();
+        }
+        else {
+            context.pingVolumio();
+        }
+    }
+    async pingVolumio() {
+        this.log.debug('Pinging volumio ...');
+        return this.apiGet('ping').then(pingResp => {
+            this.log.debug('Ping response');
+            this.setStateAsync('info.connection', true, true);
+            if (pingResp !== 'pong') {
+                this.log.warn(`Volumio API did not respond correctly to ping. Please report this issue to the developer!`);
+            }
+            return true;
+        }).catch(err => {
+            this.log.debug(`Connection to Volumio host ${this.config.host} failed: ${err.message}`);
+            this.setStateAsync('info.connection', false, true);
+            return false;
+        });
     }
 }
 Volumio.namespace = 'volumio.0.';
