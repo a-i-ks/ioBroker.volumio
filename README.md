@@ -44,6 +44,11 @@ Todo:
 - [ ] Browsing
 
 
+## Support me
+If this adapter has helped you to realise cool automations in your SmartHome and helped you reduce time to develop, you can invite me for a cup of coffee :) 
+
+[![Donate](https://raw.githubusercontent.com/a-i-ks/ioBroker.volumio/master/donate_button.png)](http://paypal.me/iske)
+
 ## Changelog
 
 ### 0.0.1
@@ -53,11 +58,6 @@ Todo:
 * (André Iske) Complete reworked adapter
     * Switched codebase to typescript
     * Changed License to MIT
-
-## Donation
-If this adapter has helped you to realise cool automations in your SmartHome and helped you reduce time to develop, you can invite me for a cup of coffee :) 
-
-[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/donate?hosted_button_id=GHGSLC8P8MWKC)
 
 ## License
 MIT License
