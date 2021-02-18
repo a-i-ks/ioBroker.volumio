@@ -12,6 +12,11 @@
 
 **Tests:** ![Test and Release](https://github.com/a-i-ks/ioBroker.volumio/workflows/Test%20and%20Release/badge.svg)
 
+### Support me
+If this adapter has helped you to realise cool automations in your SmartHome and helped you reduce time to develop, you can invite me for a cup of coffee :) 
+
+[![Donate](https://raw.githubusercontent.com/a-i-ks/ioBroker.volumio/master/donate_button.png)](http://paypal.me/iske)
+
 ## volumio adapter for ioBroker
 
 Volumio Adapter for ioBroker
@@ -44,20 +49,18 @@ Todo:
 - [ ] Browsing
 
 
-## Support me
-If this adapter has helped you to realise cool automations in your SmartHome and helped you reduce time to develop, you can invite me for a cup of coffee :) 
-
-[![Donate](https://raw.githubusercontent.com/a-i-ks/ioBroker.volumio/master/donate_button.png)](http://paypal.me/iske)
-
 ## Changelog
 
-### 0.0.1
-* (André Iske) initial release
+### 0.1.1
+* (André Iske) Minor bug fixes 
 
 ### 0.1.0
 * (André Iske) Complete reworked adapter
     * Switched codebase to typescript
     * Changed License to MIT
+
+### 0.0.1
+* (André Iske) initial release
 
 ## License
 MIT License
