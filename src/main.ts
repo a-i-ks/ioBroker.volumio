@@ -438,39 +438,54 @@ class Volumio extends utils.Adapter {
 
     private async subscribeToVolumioNotifications(): Promise<void> {
         // check if already subscribed
-        try {
-            this.log.debug(`Checking subscrition urls ...`);
-            const urls = JSON.stringify(await this.apiGet<string>('pushNotificationUrls').catch(err => {throw err}));
-            this.setStateAsync('info.connection', true, true);
-            if (urls.includes(`${ipInfo.address()}:${this.config.subscriptionPort}`)) {
-                this.log.debug('Already subscribed to volumio push notifications');
-                return;
-            }
-            // enter local http server as notification url
-            const data = { 'url': `http://${ipInfo.address()}:${this.config.subscriptionPort}/volumiostatus` };
-            const res = await this.apiPost('pushNotificationUrls', data).catch(err => {throw err}) as any;
-            if (!res || !res.success || res.success !== true) {
-                this.log.error(`Binding subscription url failed: ${res.error ? res.error : 'Unknown error'}`);
+        this.log.debug(`Checking subscrition urls ...`);
+        const urls = JSON.stringify(
+            await this.apiGet<string>('pushNotificationUrls')
+                .catch(err => {
+                    this.log.warn(`Error receiving pushNotificationUrls: ${err.message}`);
+                    this.setStateAsync('info.connection', false, true);
+                    return;
+                }));
+        this.setStateAsync('info.connection', true, true);
+        if (urls.includes(`${ipInfo.address()}:${this.config.subscriptionPort}`)) {
+            this.log.debug('Already subscribed to volumio push notifications');
+            return;
+        }
+        // enter local http server as notification url
+        const data = { 'url': `http://${ipInfo.address()}:${this.config.subscriptionPort}/volumiostatus` };
+        const res = await this.apiPost('pushNotificationUrls', data)
+            	.catch(err => {
+                this.log.error(`Binding subscription url failed: ${err.message}`);
                 this.setStateAsync('info.connection', false, true);
-            }
-        } catch(err) {
-            this.log.warn(`No connection to Volumio: ${err.message}`);
+            }) as any;
+        if (!res || !res.success || res.success !== true) {
+            this.log.error(`Binding subscription url failed: ${res.error ? res.error : 'Unknown error'}`);
             this.setStateAsync('info.connection', false, true);
         }
     }
 
     private async unsubscribeFromVolumioNotifications(): Promise<void> {
         // check if was subscribed
-        const urls = JSON.stringify(await this.apiGet<string>('pushNotificationUrls'));
+        const urls = JSON.stringify(await this.apiGet<string>('pushNotificationUrls')
+            .catch(err => {
+                this.log.warn(`Error receiving pushNotificationUrls: ${err.message}`);
+                this.setStateAsync('info.connection', false, true);
+                return;
+            }));
         if (!urls.includes(`${ipInfo.address()}:${this.config.subscriptionPort}`)) {
             this.log.debug('Subscription was not active. No need to unsubscribe')
             return
         }
         // remove local http server from notification urls
         const data = { 'url': `http://${ipInfo.address()}:${this.config.subscriptionPort}/volumiostatus` };
-        const res = await this.apiDelete('pushNotificationUrls', data) as any;
+        const res = await this.apiDelete('pushNotificationUrls', data)
+            .catch(err => {
+                this.log.error(`Error unsubscribing from pushNotificationUrls: ${err.message}`);
+                this.setStateAsync('info.connection', false, true);
+                return;
+            }) as any;
         if (!res || !res.success || res.success !== true) {
-            this.log.error(`Removing subscription url failed: ${res.error ? res.error : 'Unknown error'}`);
+            this.log.error(`Error unsubscribing from pushNotificationUrls: ${res.error ? res.error : 'Unknown error'}`);
         }
     }
 
@@ -507,7 +522,7 @@ class Volumio extends utils.Adapter {
             }
             return true;
         }).catch(err => {
-            this.log.debug(`Connection to Volumio host ${this.config.host} failed: ${err.message}`);
+            this.log.warn(`Connection to Volumio host ${this.config.host} failed: ${err.message}`);
             this.setStateAsync('info.connection', false, true);
             return false;
         });
