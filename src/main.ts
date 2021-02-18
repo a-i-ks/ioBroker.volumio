@@ -17,6 +17,7 @@ class Volumio extends utils.Adapter {
     static readonly namespace = 'volumio.0.';
     private axiosInstance: AxiosInstance;
     private httpServer;
+    private httpServerInstance: any;
     private checkConnectionInterval: any;
 
     public constructor(options: Partial<utils.AdapterOptions> = {}) {
@@ -82,7 +83,7 @@ class Volumio extends utils.Adapter {
         if (this.config.subscribeToStateChanges && this.config.subscriptionPort && connectionSuccess) {
             this.log.debug('Subscription mode is activated');
             try {
-                this.httpServer.listen(this.config.subscriptionPort);
+                this.httpServerInstance = this.httpServer.listen(this.config.subscriptionPort);
                 this.log.debug(`Server is listening on ${ipInfo.address()}:${this.config.subscriptionPort}`);
                 this.subscribeToVolumioNotifications();
             } catch (error) {
@@ -111,6 +112,8 @@ class Volumio extends utils.Adapter {
                 clearInterval(this.checkConnectionInterval);
                 this.checkConnectionInterval = null;
             }
+            // terminate express http server
+            this.httpServerInstance.close();
             callback();
         } catch (e) {
             callback();
