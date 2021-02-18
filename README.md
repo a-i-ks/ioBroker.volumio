@@ -15,7 +15,7 @@
 ### Support me
 If this adapter has helped you to realise cool automations in your SmartHome and helped you reduce time to develop, you can invite me for a cup of coffee :) 
 
-[![Donate](https://raw.githubusercontent.com/a-i-ks/ioBroker.volumio/master/donate_button.png)](http://paypal.me/iske)
+[![Donate](https://raw.githubusercontent.com/a-i-ks/ioBroker.volumio/master/donate_button.png =130x)](http://paypal.me/iske)
 
 ## volumio adapter for ioBroker
 
