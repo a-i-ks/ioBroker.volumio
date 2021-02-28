@@ -435,7 +435,6 @@ class Volumio extends utils.Adapter {
         });
     }
 
-
     private async subscribeToVolumioNotifications(): Promise<void> {
         // check if already subscribed
         this.log.debug(`Checking subscrition urls ...`);
@@ -444,7 +443,7 @@ class Volumio extends utils.Adapter {
                 .catch(err => {
                     this.log.warn(`Error receiving pushNotificationUrls: ${err.message}`);
                     this.setStateAsync('info.connection', false, true);
-                    return;
+                    return '';
                 }));
         this.setStateAsync('info.connection', true, true);
         if (urls.includes(`${ipInfo.address()}:${this.config.subscriptionPort}`)) {
@@ -470,7 +469,7 @@ class Volumio extends utils.Adapter {
             .catch(err => {
                 this.log.warn(`Error receiving pushNotificationUrls: ${err.message}`);
                 this.setStateAsync('info.connection', false, true);
-                return;
+                return '';
             }));
         if (!urls.includes(`${ipInfo.address()}:${this.config.subscriptionPort}`)) {
             this.log.debug('Subscription was not active. No need to unsubscribe')
@@ -482,7 +481,7 @@ class Volumio extends utils.Adapter {
             .catch(err => {
                 this.log.error(`Error unsubscribing from pushNotificationUrls: ${err.message}`);
                 this.setStateAsync('info.connection', false, true);
-                return;
+                return '';
             }) as any;
         if (!res || !res.success || res.success !== true) {
             this.log.error(`Error unsubscribing from pushNotificationUrls: ${res.error ? res.error : 'Unknown error'}`);
