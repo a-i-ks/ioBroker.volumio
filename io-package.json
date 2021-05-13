@@ -104,6 +104,7 @@
         "host": "volumio.local",
         "subscribeToStateChanges": true,
         "subscriptionPort": 3042,
+        "randomSubscriptionPort": true,
         "volumeSteps": 10,
         "checkConnection": true,
         "checkConnectionInterval": 30

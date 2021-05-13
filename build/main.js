@@ -88,14 +88,7 @@ class Volumio extends utils.Adapter {
         }
         if (this.config.subscribeToStateChanges && this.config.subscriptionPort && connectionSuccess) {
             this.log.debug('Subscription mode is activated');
-            try {
-                this.httpServerInstance = this.httpServer.listen(this.config.subscriptionPort);
-                this.log.debug(`Server is listening on ${ip_1.default.address()}:${this.config.subscriptionPort}`);
-                this.subscribeToVolumioNotifications();
-            }
-            catch (error) {
-                this.log.error(`Starting server on ${this.config.subscriptionPort} for subscription mode failed: ${error.message}`);
-            }
+            this.startHttpServer();
         }
         else if (this.config.subscribeToStateChanges && !this.config.subscriptionPort) {
             this.log.error('Subscription mode is activated, but port is not configured.');
@@ -210,6 +203,17 @@ class Volumio extends utils.Adapter {
             case 'queue.repeatTrackState':
                 this.setRepeatTrack(state.val);
                 break;
+        }
+    }
+    startHttpServer() {
+        try {
+            this.httpServerInstance = this.httpServer.listen((this.config.randomSubscriptionPort ? 0 : this.config.subscriptionPort), () => {
+                this.log.debug(`Server is listening on ${ip_1.default.address()}:${this.httpServerInstance.address().port}`);
+                this.subscribeToVolumioNotifications();
+            });
+        }
+        catch (error) {
+            this.log.error(`Starting server on ${this.config.subscriptionPort} for subscription mode failed: ${error.message}`);
         }
     }
     sendCmd(cmd) {

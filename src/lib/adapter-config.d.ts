@@ -7,6 +7,7 @@ declare global {
             host: string;
             subscribeToStateChanges: boolean;
             subscriptionPort: number;
+            randomSubscriptionPort: boolean;
             volumeSteps: number,
             checkConnection: boolean,
             checkConnectionInterval: number
