@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../src/types.ts"],
+  "sourcesContent": ["export interface PlayerState {\n    status: string;\n    position: string;\n    title: string;\n    artist: string;\n    album: string;\n    albumart: string;\n    uri: string;\n    trackType: string;\n    seek: number;\n    duration: number;\n    samplerate: string;\n    bitdepth: string;\n    channels: number;\n    random: boolean;\n    repeat: boolean;\n    repeatSingle: boolean;\n    consume: boolean;\n    volume: number;\n    disableVolumeControl: boolean;\n    mute: boolean;\n    stream: string;\n    updatedb: boolean;\n    volatile: boolean;\n    service: string;\n}\n\nexport interface QueueObj {\n    uri: string;\n    service: string;\n    name: string;\n    artist: string;\n    album: string;\n    type: string;\n    tracknumber: number;\n    albumart: string;\n    duration: number;\n    samplerate: string;\n    bitdepth: string;\n    trackType: string;\n    channels: number;\n}\n\nexport interface StateChangeMsg {\n    item: string,\n    data: PlayerState | QueueObj[]\n}\n\nexport interface VolumioSystemInfo {\n    id: string;\n    host: string;\n    name: string;\n    type: string;\n    serviceName: string;\n    systemversion: string;\n    builddate: string;\n    variant: string;\n    hardware: string;\n}\n\nexport interface ApiResonse {\n    time: number;\n    response: string;\n}"],
+  "mappings": ";;;;;;;;;;;;;;AAAA;AAAA;",
+  "names": []
+}
