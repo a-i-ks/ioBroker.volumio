@@ -1,8 +1,20 @@
 {
     "common": {
         "name": "volumio",
-        "version": "0.1.3",
+        "version": "0.2.0",
         "news": {
+            "0.1.4": {
+                "en": "Switch to newest adapter template, Fixed crashes and adapted to newest Volumio API",
+                "de": "Umstellung auf neuestes Adapter-Template, Behebung von Abstürzen und Anpassung an neuestes Volumio API",
+                "ru": "Переход на новейший шаблон адаптера, исправление сбоев и адаптация к новейшему API Volumio",
+                "pt": "Mudança para o modelo de adaptador mais recente, correção de falhas e adaptação à API Volumio mais recente",
+                "nl": "Overschakelen naar de nieuwste adaptersjabloon, crashes opgelost en aangepast aan de nieuwste Volumio API",
+                "fr": "Passage au modèle d'adaptateur le plus récent, correction des plantages et adaptation à l'API la plus récente de Volumio",
+                "it": "Passaggio al modello di adattatore più recente, correzione degli arresti anomali e adattamento alle nuove API di Volumio.",
+                "es": "Cambio a la plantilla de adaptador más reciente, corrección de fallos y adaptación a la API de Volumio más reciente.",
+                "pl": "Przejście na najnowszy szablon adaptera, naprawiono awarie i dostosowano do najnowszego interfejsu API Volumio",
+                "zh-cn": "切换到最新的适配器模板，修复了崩溃问题，并适应了最新的 Volumio API"
+            },
             "0.1.3": {
                 "en": "Minor bugfixes",
                 "de": "Kleinere Fehlerbehebungen",
@@ -75,12 +87,17 @@
             "André Iske <andre.iske@mailbox.org>"
         ],
         "keywords": [
+            "ioBroker",
             "volumio",
             "hifi",
             "smart home",
             "home automation"
         ],
         "license": "MIT",
+        "licenseInformation": {
+            "type": "free",
+            "license": "MIT"
+        },
         "platform": "Javascript/Node.js",
         "main": "build/main.js",
         "icon": "volumio.png",
@@ -88,15 +105,23 @@
         "extIcon": "https://raw.githubusercontent.com/a-i-ks/ioBroker.volumio/master/admin/volumio.png",
         "readme": "https://github.com/a-i-ks/ioBroker.volumio/blob/master/README.md",
         "loglevel": "info",
+        "tier": 3,
         "mode": "daemon",
         "type": "multimedia",
         "compact": true,
         "connectionType": "local",
         "dataSource": "poll",
-        "materialize": true,
+        "adminUI": {
+            "config": "json"
+        },
         "dependencies": [
             {
-                "js-controller": ">=2.0.0"
+                "js-controller": ">=3.3.22"
+            }
+        ],
+        "globalDependencies": [
+            {
+                "admin": ">=5.1.13"
             }
         ]
     },
@@ -226,6 +251,28 @@
                 "role": "value",
                 "name": "Volumio system hardware",
                 "type": "string",
+                "read": true,
+                "write": false
+            }
+        },
+        {
+            "_id": "info.isPremiumDevice",
+            "type": "state",
+            "common": {
+                "role": "value",
+                "name": "Volumio Premium Device",
+                "type": "boolean",
+                "read": true,
+                "write": false
+            }
+        },
+        {
+            "_id": "info.isVolumioProduct",
+            "type": "state",
+            "common": {
+                "role": "value",
+                "name": "Volumio Product",
+                "type": "boolean",
                 "read": true,
                 "write": false
             }
@@ -499,7 +546,7 @@
             "common": {
                 "role": "media.track",
                 "name": "Position in playlist of current track",
-                "type": "string",
+                "type": "number",
                 "read": true,
                 "write": false
             },

@@ -1,0 +1,68 @@
+{
+    "i18n": true,
+    "type": "panel",
+    "items": {
+        "header": {
+            "type": "header",
+            "text": "Volumio Adapter Configuration",
+            "size": 4
+        },
+        "host": {
+            "type": "text",
+            "label": "Volumino Host Address",
+            "default": "volumio.local",
+            "newLine": true
+        },
+        "checkConnection": {
+            "type": "checkbox",
+            "label": "Check connection to Volumio",
+            "default": true,
+            "newLine": true
+        },
+        "checkConnectionInterval": {
+            "type": "number",
+            "label": "Interval in s",
+            "default": 30,
+            "disabled": "!data.checkConnection",
+            "newLine": true
+        },
+        "divider1": {
+            "type": "divider",
+            "height": 3,
+            "newLine": true
+        },
+        "volumeSteps": {
+            "type": "number",
+            "label": "Volume steps",
+            "min": 1,
+            "max": 100,
+            "default": 5,
+            "newLine": true
+        },
+        "divider2": {
+            "type": "divider",
+            "height": 3,
+            "newLine": true
+
+        },
+        "descriptionForSubscribeToStateChanges": {
+            "type": "staticText",
+            "text": "The adapter can be used in a event driven fashion. Volumio can notify via POST calls when state changes.\nThis is a much more efficient and elegant way to retrieve informations, instead of continuously polling the relevant information.",
+            "newLine": true
+    
+        },
+        "subscribeToStateChanges": {
+            "type": "checkbox",
+            "label": "Subscribe to player state changes",
+            "default": false,
+            "newLine": true
+        },
+        "subscriptionPort": {
+            "type": "number",
+            "label": "Subscription port",
+            "default": 3042,
+            "disabled": "!data.subscribeToStateChanges",
+            "newLine": true
+        }
+    }
+}
