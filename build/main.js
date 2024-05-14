@@ -69,9 +69,16 @@ class Volumio extends utils.Adapter {
       this.getPlayerState();
     }
     if (this.config.subscribeToStateChanges && this.config.subscriptionPort && connectionSuccess) {
-      this.log.debug("Subscription mode is activated");
+      this.log.debug(`Starting server on ${this.config.subscriptionPort} for subscription mode ...`);
       try {
-        this.httpServerInstance = this.httpServer.listen(this.config.subscriptionPort);
+        this.httpServerInstance = this.httpServer.listen(this.config.subscriptionPort).on("error", (error) => {
+          if (error.code === "EADDRINUSE") {
+            this.log.error(`Port ${this.config.subscriptionPort} is already in use. Please choose another one. Subscription mode will not be available.`);
+            this.config.subscribeToStateChanges = false;
+          } else {
+            this.log.error(`Starting server on ${this.config.subscriptionPort} for subscription mode failed: ${error}`);
+          }
+        });
         this.log.debug(`Server is listening on ${import_ip.default.address()}:${this.config.subscriptionPort}`);
         this.subscribeToVolumioNotifications();
       } catch (error) {
@@ -320,7 +327,7 @@ class Volumio extends utils.Adapter {
     var _a;
     (_a = this.axiosInstance) == null ? void 0 : _a.get("getSystemInfo").then((response) => {
       var _a2;
-      this.log.debug(`getSystemInfo response: ${response == null ? void 0 : response.data}`);
+      this.log.debug(`getSystemInfo response: ${JSON.stringify(response == null ? void 0 : response.data)}`);
       if (response.data) {
         this.updateSystemInfo(response.data);
       }
@@ -334,7 +341,7 @@ class Volumio extends utils.Adapter {
   getPlayerState() {
     var _a;
     (_a = this.axiosInstance) == null ? void 0 : _a.get("getState").then((response) => {
-      this.log.debug(`getState response: ${response == null ? void 0 : response.data}`);
+      this.log.debug(`getState response: ${JSON.stringify(response == null ? void 0 : response.data)}`);
       if (response.data) {
         this.updatePlayerState(response.data);
       }

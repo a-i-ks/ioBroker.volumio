@@ -9,6 +9,7 @@ import axios, { AxiosInstance } from "axios";
 import express from "express";
 import bodyParser from "body-parser";
 import ipInfo from "ip";
+import net from "net";
 
 // Load your modules here, e.g.:
 // import * as fs from "fs";
@@ -79,9 +80,17 @@ class Volumio extends utils.Adapter {
 
         // setup subscription mode if enabled
         if (this.config.subscribeToStateChanges && this.config.subscriptionPort && connectionSuccess) {
-            this.log.debug("Subscription mode is activated");
+            this.log.debug(`Starting server on ${this.config.subscriptionPort} for subscription mode ...`);
             try {
-                this.httpServerInstance = this.httpServer.listen(this.config.subscriptionPort);
+                this.httpServerInstance = this.httpServer.listen(this.config.subscriptionPort)
+                    .on("error", (error: any) => {
+                        if (error.code === "EADDRINUSE") {
+                            this.log.error(`Port ${this.config.subscriptionPort} is already in use. Please choose another one. Subscription mode will not be available.`);
+                            this.config.subscribeToStateChanges = false;
+                        } else {
+                            this.log.error(`Starting server on ${this.config.subscriptionPort} for subscription mode failed: ${error}`);
+                        }
+                    });
                 this.log.debug(`Server is listening on ${ipInfo.address()}:${this.config.subscriptionPort}`);
                 this.subscribeToVolumioNotifications();
             } catch (error) {
@@ -399,7 +408,7 @@ class Volumio extends utils.Adapter {
 
     private getSystemInfo(): void {
         this.axiosInstance?.get("getSystemInfo").then(response => {
-            this.log.debug(`getSystemInfo response: ${response?.data}`);
+            this.log.debug(`getSystemInfo response: ${JSON.stringify(response?.data)}`);
             if (response.data) {
                 this.updateSystemInfo(response.data);
             }
@@ -414,7 +423,7 @@ class Volumio extends utils.Adapter {
 
     private getPlayerState(): void {
         this.axiosInstance?.get("getState").then(response => {
-            this.log.debug(`getState response: ${response?.data}`);
+            this.log.debug(`getState response: ${JSON.stringify(response?.data)}`);
             if (response.data) {
                 this.updatePlayerState(response.data);
             }
