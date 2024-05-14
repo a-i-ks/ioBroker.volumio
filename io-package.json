@@ -1,7 +1,7 @@
 {
     "common": {
         "name": "volumio",
-        "version": "0.1.4",
+        "version": "0.2.0",
         "news": {
             "0.1.4": {
                 "en": "Switch to newest adapter template, Fixed crashes and adapted to newest Volumio API",
@@ -251,6 +251,28 @@
                 "role": "value",
                 "name": "Volumio system hardware",
                 "type": "string",
+                "read": true,
+                "write": false
+            }
+        },
+        {
+            "_id": "info.isPremiumDevice",
+            "type": "state",
+            "common": {
+                "role": "value",
+                "name": "Volumio Premium Device",
+                "type": "boolean",
+                "read": true,
+                "write": false
+            }
+        },
+        {
+            "_id": "info.isVolumioProduct",
+            "type": "state",
+            "common": {
+                "role": "value",
+                "name": "Volumio Product",
+                "type": "boolean",
                 "read": true,
                 "write": false
             }
