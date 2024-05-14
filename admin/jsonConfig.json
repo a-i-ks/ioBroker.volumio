@@ -5,7 +5,7 @@
         "header": {
             "type": "header",
             "text": "Volumio Adapter Configuration",
-            "size": "h5"
+            "size": 4
         },
         "host": {
             "type": "text",

@@ -87,6 +87,140 @@ class Volumio extends utils.Adapter {
       res.sendStatus(200);
     });
   }
+  /**
+   * Is called when adapter shuts down - callback has to be called under any circumstances!
+   */
+  onUnload(callback) {
+    try {
+      this.unsubscribeFromVolumioNotifications();
+      if (this.checkConnectionInterval) {
+        clearInterval(this.checkConnectionInterval);
+        this.checkConnectionInterval = null;
+      }
+      this.httpServerInstance.close();
+      callback();
+    } catch (e) {
+      callback();
+    }
+  }
+  // If you need to react to object changes, uncomment the following block and the corresponding line in the constructor.
+  // You also need to subscribe to the objects with `this.subscribeObjects`, similar to `this.subscribeStates`.
+  // /**
+  //  * Is called if a subscribed object changes
+  //  */
+  // private onObjectChange(id: string, obj: ioBroker.Object | null | undefined): void {
+  //     if (obj) {
+  //         // The object was changed
+  //         this.log.info(`object ${id} changed: ${JSON.stringify(obj)}`);
+  //     } else {
+  //         // The object was deleted
+  //         this.log.info(`object ${id} deleted`);
+  //     }
+  // }
+  /**
+   * Is called if a subscribed state changes
+   */
+  onStateChange(id, state) {
+    if (!state) {
+      this.log.info(`state ${id} deleted`);
+      return;
+    }
+    if (state.ack) {
+      this.log.silly(`State change of ${id} to "${state.val}" was already acknowledged. No need for further actions`);
+      return;
+    }
+    this.log.debug(`state ${id} changed to ${state == null ? void 0 : state.val}`);
+    const stateId = id.replace(new RegExp(`^volumio.\\d+\\.`), "");
+    switch (stateId) {
+      case "getPlaybackInfo":
+        this.getPlayerState();
+        break;
+      case "player.mute":
+        this.volumeMute();
+        break;
+      case "player.unmute":
+        this.volumeUnmute();
+        break;
+      case "player.next":
+        this.nextTrack();
+        break;
+      case "player.prev":
+        this.previousTrack();
+        break;
+      case "player.pause":
+        this.playbackPause();
+        break;
+      case "player.play":
+        this.playbackPlay();
+        break;
+      case "player.playN":
+        this.playbackPlay(state.val);
+        break;
+      case "player.stop":
+        this.playbackStop();
+        break;
+      case "player.toggle":
+        this.playbackToggle();
+        break;
+      case "playbackInfo.volume":
+      case "player.volume":
+        this.volumeSetTo(state.val);
+        break;
+      case "player.volume.down":
+        this.volumeDown();
+        break;
+      case "player.volume.up":
+        this.volumeUp();
+        break;
+      case "queue.clearQueue":
+        this.clearQueue();
+        break;
+      case "queue.repeatTrack":
+        this.getStateAsync("playbackInfo.repeatSingle", (err, state2) => {
+          if (state2) {
+            this.setRepeatTrack(!state2.val);
+          }
+        });
+        break;
+      case "playbackInfo.random":
+      case "queue.random":
+        this.setRandomPlayback(state.val);
+        break;
+      case "queue.shuffleMode":
+        if (!isNumber(state.val)) {
+          this.log.warn("queue.shuffleMode state change. Invalid state value passed");
+          break;
+        }
+        if (state.val === 0) {
+          this.setRandomPlayback(false);
+        } else if (state.val === 1) {
+          this.setRandomPlayback(true);
+        } else if (state.val === 2) {
+          this.log.warn("queue.shuffleMode 2 not implemented yet");
+        } else {
+          this.log.warn("Invalid value to queue.shuffleMode passed");
+        }
+        break;
+      case "queue.repeatTrackState":
+        this.setRepeatTrack(state.val);
+        break;
+    }
+  }
+  // If you need to accept messages in your adapter, uncomment the following block and the corresponding line in the constructor.
+  // /**
+  //  * Some message was sent to this instance over message box. Used by email, pushover, text2speech, ...
+  //  * Using this method requires "common.messagebox" property to be set to true in io-package.json
+  //  */
+  // private onMessage(obj: ioBroker.Message): void {
+  //     if (typeof obj === "object" && obj.message) {
+  //         if (obj.command === "send") {
+  //             // e.g. send email or pushover or whatever
+  //             this.log.info("send command");
+  //             // Send response in callback if required
+  //             if (obj.callback) this.sendTo(obj.from, obj.command, "Message received", obj.callback);
+  //         }
+  //     }
+  // }
   onVolumioStateChange(msg) {
     this.log.debug(`State change message received: ${JSON.stringify(msg)}`);
     if (!msg || !msg.item) {
@@ -549,134 +683,6 @@ class Volumio extends utils.Adapter {
       this.log.error(`Error setting repeat track: ${error}`);
     });
   }
-  /**
-   * Is called when adapter shuts down - callback has to be called under any circumstances!
-   */
-  onUnload(callback) {
-    try {
-      callback();
-    } catch (e) {
-      callback();
-    }
-  }
-  // If you need to react to object changes, uncomment the following block and the corresponding line in the constructor.
-  // You also need to subscribe to the objects with `this.subscribeObjects`, similar to `this.subscribeStates`.
-  // /**
-  //  * Is called if a subscribed object changes
-  //  */
-  // private onObjectChange(id: string, obj: ioBroker.Object | null | undefined): void {
-  //     if (obj) {
-  //         // The object was changed
-  //         this.log.info(`object ${id} changed: ${JSON.stringify(obj)}`);
-  //     } else {
-  //         // The object was deleted
-  //         this.log.info(`object ${id} deleted`);
-  //     }
-  // }
-  /**
-   * Is called if a subscribed state changes
-   */
-  onStateChange(id, state) {
-    this.log.debug(`state ${id} changed: ${state == null ? void 0 : state.val}`);
-    if (!state) {
-      this.log.info(`state ${id} deleted`);
-      return;
-    }
-    if (state.ack) {
-      this.log.silly(`State change of ${id} to "${state.val}" was already acknowledged. No need for further actions`);
-      return;
-    }
-    const stateId = id.replace(new RegExp(`^volumio.\\d+\\.`), "");
-    switch (stateId) {
-      case "getPlaybackInfo":
-        this.getPlayerState();
-        break;
-      case "player.mute":
-        this.volumeMute();
-        break;
-      case "player.unmute":
-        this.volumeUnmute();
-        break;
-      case "player.next":
-        this.nextTrack();
-        break;
-      case "player.prev":
-        this.previousTrack();
-        break;
-      case "player.pause":
-        this.playbackPause();
-        break;
-      case "player.play":
-        this.playbackPlay();
-        break;
-      case "player.playN":
-        this.playbackPlay(state.val);
-        break;
-      case "player.stop":
-        this.playbackStop();
-        break;
-      case "player.toggle":
-        this.playbackToggle();
-        break;
-      case "playbackInfo.volume":
-      case "player.volume":
-        this.volumeSetTo(state.val);
-        break;
-      case "player.volume.down":
-        this.volumeDown();
-        break;
-      case "player.volume.up":
-        this.volumeUp();
-        break;
-      case "queue.clearQueue":
-        this.clearQueue();
-        break;
-      case "queue.repeatTrack":
-        this.getStateAsync("playbackInfo.repeatSingle", (err, state2) => {
-          if (state2) {
-            this.setRepeatTrack(!state2.val);
-          }
-        });
-        break;
-      case "playbackInfo.random":
-      case "queue.random":
-        this.setRandomPlayback(state.val);
-        break;
-      case "queue.shuffleMode":
-        if (!isNumber(state.val)) {
-          this.log.warn("queue.shuffleMode state change. Invalid state value passed");
-          break;
-        }
-        if (state.val === 0) {
-          this.setRandomPlayback(false);
-        } else if (state.val === 1) {
-          this.setRandomPlayback(true);
-        } else if (state.val === 2) {
-          this.log.warn("queue.shuffleMode 2 not implemented yet");
-        } else {
-          this.log.warn("Invalid value to queue.shuffleMode passed");
-        }
-        break;
-      case "queue.repeatTrackState":
-        this.setRepeatTrack(state.val);
-        break;
-    }
-  }
-  // If you need to accept messages in your adapter, uncomment the following block and the corresponding line in the constructor.
-  // /**
-  //  * Some message was sent to this instance over message box. Used by email, pushover, text2speech, ...
-  //  * Using this method requires "common.messagebox" property to be set to true in io-package.json
-  //  */
-  // private onMessage(obj: ioBroker.Message): void {
-  //     if (typeof obj === "object" && obj.message) {
-  //         if (obj.command === "send") {
-  //             // e.g. send email or pushover or whatever
-  //             this.log.info("send command");
-  //             // Send response in callback if required
-  //             if (obj.callback) this.sendTo(obj.from, obj.command, "Message received", obj.callback);
-  //         }
-  //     }
-  // }
 }
 function isNumber(value) {
   return value != null && value !== "" && !isNaN(Number(value.toString()));

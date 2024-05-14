@@ -546,7 +546,7 @@
             "common": {
                 "role": "media.track",
                 "name": "Position in playlist of current track",
-                "type": "string",
+                "type": "number",
                 "read": true,
                 "write": false
             },
