@@ -355,65 +355,63 @@ class Volumio extends utils.Adapter {
     });
   }
   updatePlayerState(state) {
-    this.log.debug(`Updating player state ...`);
-    if (state.status) {
+    if (state.status !== void 0) {
       this.setStateAsync("playbackInfo.status", state.status, true);
     }
-    if (state.position) {
+    if (state.position !== void 0) {
       this.setStateAsync("playbackInfo.position", state.position, true);
     }
-    if (state.title && state.track) {
+    if (state.title !== void 0 && state.track !== void 0) {
       if (state.title !== state.track) {
         this.log.warn(`Title and track attibutes are both set but differ. Title will be set to ${state.title}`);
         this.setStateAsync("playbackInfo.title", state.title, true);
       }
       this.setStateAsync("playbackInfo.title", state.title, true);
-    } else if (state.title) {
+    } else if (state.title !== void 0) {
       this.setStateAsync("playbackInfo.title", state.title, true);
-    } else if (state.track) {
+    } else if (state.track !== void 0) {
       this.setStateAsync("playbackInfo.title", state.track, true);
     }
-    if (state.artist) {
+    if (state.artist !== void 0) {
       this.setStateAsync("playbackInfo.artist", state.artist, true);
     }
-    if (state.album) {
+    if (state.album !== void 0) {
       this.setStateAsync("playbackInfo.album", state.album, true);
     }
-    if (state.albumart) {
+    if (state.albumart !== void 0) {
       this.setStateAsync("playbackInfo.albumart", state.albumart, true);
     }
-    if (state.uri) {
+    if (state.uri !== void 0) {
       this.setStateAsync("playbackInfo.uri", state.uri, true);
     }
-    if (state.trackType) {
+    if (state.trackType !== void 0) {
       this.setStateAsync("playbackInfo.trackType", state.trackType, true);
     }
-    if (state.seek) {
+    if (state.seek !== void 0) {
       this.setStateAsync("playbackInfo.seek", state.seek, true);
     }
-    if (state.duration) {
-      this.log.debug(`Set Duration: ${state.duration}`);
+    if (state.duration !== void 0) {
       this.setStateAsync("playbackInfo.duration", state.duration, true);
     }
-    if (state.samplerate) {
+    if (state.samplerate !== void 0) {
       this.setStateAsync("playbackInfo.samplerate", state.samplerate, true);
     }
-    if (state.bitdepth) {
+    if (state.bitdepth !== void 0) {
       this.setStateAsync("playbackInfo.bitdepth", state.bitdepth, true);
     }
-    if (state.channels) {
+    if (state.channels !== void 0) {
       this.setStateAsync("playbackInfo.channels", state.channels, true);
     }
-    if (state.random) {
+    if (state.random !== void 0) {
       this.setStateAsync("playbackInfo.random", state.random, true);
     }
-    if (state.repeat) {
+    if (state.repeat !== void 0) {
       this.setStateAsync("playbackInfo.repeat", state.repeat, true);
     }
-    if (state.repeatSingle) {
+    if (state.repeatSingle !== void 0) {
       this.setStateAsync("playbackInfo.repeatSingle", state.repeatSingle, true);
     }
-    if (state.consume) {
+    if (state.consume !== void 0) {
       this.setStateAsync("playbackInfo.consume", state.consume, true);
     }
     if (state.volume) {
@@ -422,57 +420,57 @@ class Volumio extends utils.Adapter {
     if (state.dbVolume) {
       this.setStateAsync("playbackInfo.dbVolume", state.dbVolume, true);
     }
-    if (state.disableVolumeControl) {
+    if (state.disableVolumeControl !== void 0) {
       this.setStateAsync("playbackInfo.disableVolumeControl", state.disableVolumeControl, true);
     }
-    if (state.mute) {
+    if (state.mute !== void 0) {
       this.setStateAsync("playbackInfo.mute", state.mute, true);
     }
-    if (state.stream) {
+    if (state.stream !== void 0) {
       this.setStateAsync("playbackInfo.stream", state.stream, true);
     }
-    if (state.updatedb) {
+    if (state.updatedb !== void 0) {
       this.setStateAsync("playbackInfo.updatedb", state.updatedb, true);
     }
-    if (state.volatile) {
+    if (state.volatile !== void 0) {
       this.setStateAsync("playbackInfo.volatile", state.volatile, true);
     }
-    if (state.service) {
+    if (state.service !== void 0) {
       this.setStateAsync("playbackInfo.service", state.service, true);
     }
   }
   updateSystemInfo(systemInfo) {
-    if (systemInfo.id) {
+    if (systemInfo.id !== void 0) {
       this.setStateAsync("info.id", systemInfo.id, true);
     }
-    if (systemInfo.host) {
+    if (systemInfo.host !== void 0) {
       this.setStateAsync("info.host", systemInfo.host, true);
     }
-    if (systemInfo.name) {
+    if (systemInfo.name !== void 0) {
       this.setStateAsync("info.name", systemInfo.name, true);
     }
-    if (systemInfo.type) {
+    if (systemInfo.type !== void 0) {
       this.setStateAsync("info.type", systemInfo.type, true);
     }
-    if (systemInfo.serviceName) {
+    if (systemInfo.serviceName !== void 0) {
       this.setStateAsync("info.serviceName", systemInfo.serviceName, true);
     }
-    if (systemInfo.systemversion) {
+    if (systemInfo.systemversion !== void 0) {
       this.setStateAsync("info.systemversion", systemInfo.systemversion, true);
     }
-    if (systemInfo.builddate) {
+    if (systemInfo.builddate !== void 0) {
       this.setStateAsync("info.builddate", systemInfo.builddate, true);
     }
-    if (systemInfo.variant) {
+    if (systemInfo.variant !== void 0) {
       this.setStateAsync("info.variant", systemInfo.variant, true);
     }
-    if (systemInfo.hardware) {
+    if (systemInfo.hardware !== void 0) {
       this.setStateAsync("info.hardware", systemInfo.hardware, true);
     }
-    if (systemInfo.isPremiumDevice) {
+    if (systemInfo.isPremiumDevice !== void 0) {
       this.setStateAsync("info.isPremiumDevice", systemInfo.isPremiumDevice, true);
     }
-    if (systemInfo.isVolumioProduct) {
+    if (systemInfo.isVolumioProduct !== void 0) {
       this.setStateAsync("info.isVolumioProduct", systemInfo.isVolumioProduct, true);
     }
   }

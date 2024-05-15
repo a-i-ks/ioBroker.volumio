@@ -437,68 +437,65 @@ class Volumio extends utils.Adapter {
     }
 
     private updatePlayerState(state: any) : void {
-        //TODO: remove this debug log
-        this.log.debug(`Updating player state ...`);
-        if (state.status) {
+        if (state.status !== undefined) {
             this.setStateAsync("playbackInfo.status", state.status, true);
         }
-        if (state.position) {
+        if (state.position !== undefined) {
             this.setStateAsync("playbackInfo.position", state.position, true);
         }
-        if (state.title && state.track) {
+        if (state.title !== undefined && state.track !== undefined) {
             if (state.title !== state.track) {
                 this.log.warn(`Title and track attibutes are both set but differ. Title will be set to ${state.title}`);
                 this.setStateAsync("playbackInfo.title", state.title, true);
             }
             this.setStateAsync("playbackInfo.title", state.title, true);
         }
-        else if (state.title) {
+        else if (state.title !== undefined) {
             this.setStateAsync("playbackInfo.title", state.title, true);
         }
-        else if (state.track) {
+        else if (state.track !== undefined) {
             this.setStateAsync("playbackInfo.title", state.track, true);
         }
-        if (state.artist) {
+        if (state.artist !== undefined) {
             this.setStateAsync("playbackInfo.artist", state.artist, true);
         }
-        if (state.album) {
+        if (state.album !== undefined) {
             this.setStateAsync("playbackInfo.album", state.album, true);
         }
-        if (state.albumart) {
+        if (state.albumart !== undefined) {
             this.setStateAsync("playbackInfo.albumart", state.albumart, true);
         }
-        if (state.uri) {
+        if (state.uri !== undefined) {
             this.setStateAsync("playbackInfo.uri", state.uri, true);
         }
-        if (state.trackType) {
+        if (state.trackType !== undefined) {
             this.setStateAsync("playbackInfo.trackType", state.trackType, true);
         }
-        if (state.seek) {
+        if (state.seek !== undefined) {
             this.setStateAsync("playbackInfo.seek", state.seek, true);
         }
-        if (state.duration) {
-            this.log.debug(`Set Duration: ${state.duration}`);
+        if (state.duration !== undefined) {
             this.setStateAsync("playbackInfo.duration", state.duration, true);
         }
-        if (state.samplerate) {
+        if (state.samplerate !== undefined) {
             this.setStateAsync("playbackInfo.samplerate", state.samplerate, true);
         }
-        if (state.bitdepth) {
+        if (state.bitdepth !== undefined) {
             this.setStateAsync("playbackInfo.bitdepth", state.bitdepth, true);
         }
-        if (state.channels) {
+        if (state.channels !== undefined) {
             this.setStateAsync("playbackInfo.channels", state.channels, true);
         }
-        if (state.random) {
+        if (state.random !== undefined) {
             this.setStateAsync("playbackInfo.random", state.random, true);
         }
-        if (state.repeat) {
+        if (state.repeat !== undefined) {
             this.setStateAsync("playbackInfo.repeat", state.repeat, true);
         }
-        if (state.repeatSingle) {
+        if (state.repeatSingle !== undefined) {
             this.setStateAsync("playbackInfo.repeatSingle", state.repeatSingle, true);
         }
-        if (state.consume) {
+        if (state.consume !== undefined) {
             this.setStateAsync("playbackInfo.consume", state.consume, true);
         }
         if (state.volume) {
@@ -507,58 +504,58 @@ class Volumio extends utils.Adapter {
         if (state.dbVolume) {
             this.setStateAsync("playbackInfo.dbVolume", state.dbVolume, true);
         }
-        if (state.disableVolumeControl) {
+        if (state.disableVolumeControl !== undefined) {
             this.setStateAsync("playbackInfo.disableVolumeControl", state.disableVolumeControl, true);
         }
-        if (state.mute) {
+        if (state.mute !== undefined) {
             this.setStateAsync("playbackInfo.mute", state.mute, true);
         }
-        if (state.stream) {
+        if (state.stream !== undefined) {
             this.setStateAsync("playbackInfo.stream", state.stream, true);
         }
-        if (state.updatedb) {
+        if (state.updatedb !== undefined) {
             this.setStateAsync("playbackInfo.updatedb", state.updatedb, true);
         }
-        if (state.volatile) {
+        if (state.volatile !== undefined) {
             this.setStateAsync("playbackInfo.volatile", state.volatile, true);
         }
-        if (state.service) {
+        if (state.service !== undefined) {
             this.setStateAsync("playbackInfo.service", state.service, true);
         }
     }
 
     private updateSystemInfo(systemInfo: any) : void {
-        if (systemInfo.id) {
+        if (systemInfo.id !== undefined) {
             this.setStateAsync("info.id", systemInfo.id, true);
         }
-        if (systemInfo.host) {
+        if (systemInfo.host !== undefined) {
             this.setStateAsync("info.host", systemInfo.host, true);
         }
-        if (systemInfo.name) {
+        if (systemInfo.name !== undefined) {
             this.setStateAsync("info.name", systemInfo.name, true);
         }
-        if (systemInfo.type) {
+        if (systemInfo.type !== undefined) {
             this.setStateAsync("info.type", systemInfo.type, true);
         }
-        if (systemInfo.serviceName) {
+        if (systemInfo.serviceName !== undefined) {
             this.setStateAsync("info.serviceName", systemInfo.serviceName, true);
         }
-        if (systemInfo.systemversion) {
+        if (systemInfo.systemversion !== undefined) {
             this.setStateAsync("info.systemversion", systemInfo.systemversion, true);
         }
-        if (systemInfo.builddate) {
+        if (systemInfo.builddate !== undefined) {
             this.setStateAsync("info.builddate", systemInfo.builddate, true);
         }
-        if (systemInfo.variant) {
+        if (systemInfo.variant !== undefined) {
             this.setStateAsync("info.variant", systemInfo.variant, true);
         }
-        if (systemInfo.hardware) {
+        if (systemInfo.hardware !== undefined) {
             this.setStateAsync("info.hardware", systemInfo.hardware, true);
         }
-        if (systemInfo.isPremiumDevice) {
+        if (systemInfo.isPremiumDevice !== undefined) {
             this.setStateAsync("info.isPremiumDevice", systemInfo.isPremiumDevice, true);
         }
-        if (systemInfo.isVolumioProduct) {
+        if (systemInfo.isVolumioProduct !== undefined) {
             this.setStateAsync("info.isVolumioProduct", systemInfo.isVolumioProduct, true);
         }
     }
