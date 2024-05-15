@@ -23,8 +23,8 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 var utils = __toESM(require("@iobroker/adapter-core"));
 var import_axios = __toESM(require("axios"));
-var import_express = __toESM(require("express"));
 var import_body_parser = __toESM(require("body-parser"));
+var import_express = __toESM(require("express"));
 var import_ip = __toESM(require("ip"));
 class Volumio extends utils.Adapter {
   axiosInstance = null;
@@ -82,7 +82,8 @@ class Volumio extends utils.Adapter {
         this.log.debug(`Server is listening on ${import_ip.default.address()}:${this.config.subscriptionPort}`);
         this.subscribeToVolumioNotifications();
       } catch (error) {
-        this.log.error(`Starting server on ${this.config.subscriptionPort} for subscription mode failed: ${error}`);
+        this.log.error(`Starting server on ${this.config.subscriptionPort} for subscription mode failed: ${error}. Subscription mode will not be available.`);
+        this.config.subscribeToStateChanges = false;
       }
     } else if (this.config.subscribeToStateChanges && !this.config.subscriptionPort) {
       this.log.error("Subscription mode is activated, but port is not configured.");
@@ -242,23 +243,19 @@ class Volumio extends utils.Adapter {
     }
   }
   async subscribeToVolumioNotifications() {
-    var _a, _b;
+    var _a;
     this.log.debug("Checking subscrition urls ...");
-    const urls = JSON.stringify(
-      await ((_a = this.axiosInstance) == null ? void 0 : _a.get("pushNotificationUrls").then((response) => {
-        return response.data;
-      }).catch((err) => {
-        this.setStateAsync("info.connection", false, true);
-        throw new Error(`Error receiving pushNotificationUrls: ${err.message}`);
-      }))
-    );
+    const urls = await this.getPushNotificationUrls();
+    if (!urls) {
+      return;
+    }
     this.setStateAsync("info.connection", true, true);
     if (urls.includes(`${import_ip.default.address()}:${this.config.subscriptionPort}`)) {
       this.log.debug("Already subscribed to volumio push notifications");
       return;
     }
     const data = { "url": `http://${import_ip.default.address()}:${this.config.subscriptionPort}/volumiostatus` };
-    (_b = this.axiosInstance) == null ? void 0 : _b.post("pushNotificationUrls", data).then((response) => {
+    (_a = this.axiosInstance) == null ? void 0 : _a.post("pushNotificationUrls", data).then((response) => {
       var _a2;
       if ((_a2 = response.data) == null ? void 0 : _a2.success) {
         this.log.debug("Subscription to volumio push notifications successful");
@@ -270,23 +267,31 @@ class Volumio extends utils.Adapter {
       this.setStateAsync("info.connection", false, true);
     });
   }
-  async unsubscribeFromVolumioNotifications() {
-    var _a, _b;
-    this.log.debug("Unsubscribing from volumio push notifications ...");
-    const urls = JSON.stringify(
+  async getPushNotificationUrls() {
+    var _a;
+    return JSON.stringify(
       await ((_a = this.axiosInstance) == null ? void 0 : _a.get("pushNotificationUrls").then((response) => {
         return response.data;
       }).catch((err) => {
         this.setStateAsync("info.connection", false, true);
-        throw new Error(`Error receiving pushNotificationUrls: ${err.message}`);
+        this.log.error(`Error receiving pushNotificationUrls: ${err.message}`);
+        return null;
       }))
     );
+  }
+  async unsubscribeFromVolumioNotifications() {
+    var _a;
+    this.log.debug("Unsubscribing from volumio push notifications ...");
+    const urls = await this.getPushNotificationUrls();
+    if (!urls) {
+      return;
+    }
     if (!urls.includes(`${import_ip.default.address()}:${this.config.subscriptionPort}`)) {
       this.log.debug("Subscription was not active. No need to unsubscribe");
       return;
     }
     const data = { "url": `http://${import_ip.default.address()}:${this.config.subscriptionPort}/volumiostatus` };
-    (_b = this.axiosInstance) == null ? void 0 : _b.delete("pushNotificationUrls", data).then((response) => {
+    (_a = this.axiosInstance) == null ? void 0 : _a.delete("pushNotificationUrls", data).then((response) => {
       var _a2;
       if ((_a2 = response.data) == null ? void 0 : _a2.success) {
         this.log.debug("Unsubscription from volumio push notifications successful");
@@ -356,8 +361,16 @@ class Volumio extends utils.Adapter {
     if (state.position) {
       this.setStateAsync("playbackInfo.position", state.position, true);
     }
-    if (state.title) {
+    if (state.title && state.track) {
+      if (state.title !== state.track) {
+        this.log.warn(`Title and track attibutes are both set but differ. Title will be set to ${state.title}`);
+        this.setStateAsync("playbackInfo.title", state.title, true);
+      }
       this.setStateAsync("playbackInfo.title", state.title, true);
+    } else if (state.title) {
+      this.setStateAsync("playbackInfo.title", state.title, true);
+    } else if (state.track) {
+      this.setStateAsync("playbackInfo.title", state.track, true);
     }
     if (state.artist) {
       this.setStateAsync("playbackInfo.artist", state.artist, true);
@@ -376,6 +389,9 @@ class Volumio extends utils.Adapter {
     }
     if (state.seek) {
       this.setStateAsync("playbackInfo.seek", state.seek, true);
+    }
+    if (state.duration) {
+      this.setStateAsync("playbackInfo.duration", state.duration, true);
     }
     if (state.samplerate) {
       this.setStateAsync("playbackInfo.samplerate", state.samplerate, true);
@@ -402,7 +418,7 @@ class Volumio extends utils.Adapter {
       this.setStateAsync("playbackInfo.volume", state.volume, true);
     }
     if (state.dbVolume) {
-      this.setStateAsync("playbackInfo.dbVolume", state.volume, true);
+      this.setStateAsync("playbackInfo.dbVolume", state.dbVolume, true);
     }
     if (state.disableVolumeControl) {
       this.setStateAsync("playbackInfo.disableVolumeControl", state.disableVolumeControl, true);
@@ -421,9 +437,6 @@ class Volumio extends utils.Adapter {
     }
     if (state.service) {
       this.setStateAsync("playbackInfo.service", state.service, true);
-    }
-    if (state.track) {
-      this.setStateAsync("playbackInfo.title", state.track, true);
     }
   }
   updateSystemInfo(systemInfo) {
@@ -595,7 +608,7 @@ class Volumio extends utils.Adapter {
       if ((_b = (_a2 = response.data) == null ? void 0 : _a2.response) == null ? void 0 : _b.toLowerCase().includes("success")) {
         this.log.debug(`Volume set to ${value}`);
         this.setStateAsync("playbackInfo.volume", value, true);
-        this.setStateAsync("player.volume", value, true);
+        this.setStateAsync("player.volume", value);
       } else {
         this.log.warn(`Volume setting failed: ${response.data}`);
       }

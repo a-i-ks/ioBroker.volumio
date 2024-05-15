@@ -6,8 +6,8 @@
 // you need to create an adapter
 import * as utils from "@iobroker/adapter-core";
 import axios, { AxiosInstance } from "axios";
-import express from "express";
 import bodyParser from "body-parser";
+import express from "express";
 import ipInfo from "ip";
 
 // Load your modules here, e.g.:
@@ -324,14 +324,10 @@ class Volumio extends utils.Adapter {
     private async subscribeToVolumioNotifications(): Promise<void> {
         // check if already subscribed
         this.log.debug("Checking subscrition urls ...");
-        const urls = JSON.stringify(
-            await this.axiosInstance?.get("pushNotificationUrls").then(response => {
-                return response.data;
-            }).catch(err => {
-                this.setStateAsync("info.connection", false, true);
-                throw new Error(`Error receiving pushNotificationUrls: ${err.message}`);
-            })
-        );
+        const urls = await this.getPushNotificationUrls();
+        if (!urls) {
+            return;
+        }
         this.setStateAsync("info.connection", true, true);
         if (urls.includes(`${ipInfo.address()}:${this.config.subscriptionPort}`)) {
             this.log.debug("Already subscribed to volumio push notifications");
@@ -351,17 +347,25 @@ class Volumio extends utils.Adapter {
         });
     }
 
-    private async unsubscribeFromVolumioNotifications(): Promise<void> {
-        this.log.debug("Unsubscribing from volumio push notifications ...");
-        // check if was subscribed
-        const urls = JSON.stringify(
+    private async getPushNotificationUrls(): Promise<string | null> {
+        return JSON.stringify(
             await this.axiosInstance?.get("pushNotificationUrls").then(response => {
                 return response.data;
             }).catch(err => {
                 this.setStateAsync("info.connection", false, true);
-                throw new Error(`Error receiving pushNotificationUrls: ${err.message}`);
+                this.log.error(`Error receiving pushNotificationUrls: ${err.message}`);
+                return null;
             })
         );
+    }
+
+    private async unsubscribeFromVolumioNotifications(): Promise<void> {
+        this.log.debug("Unsubscribing from volumio push notifications ...");
+        // check if was subscribed
+        const urls = await this.getPushNotificationUrls();
+        if (!urls) {
+            return;
+        }
         if (!urls.includes(`${ipInfo.address()}:${this.config.subscriptionPort}`)) {
             this.log.debug("Subscription was not active. No need to unsubscribe")
             return

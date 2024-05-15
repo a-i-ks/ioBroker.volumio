@@ -3,7 +3,7 @@
         "name": "volumio",
         "version": "0.2.0",
         "news": {
-            "0.1.4": {
+            "0.2.0": {
                 "en": "Switch to newest adapter template, Fixed crashes and adapted to newest Volumio API",
                 "de": "Umstellung auf neuestes Adapter-Template, Behebung von Abstürzen und Anpassung an neuestes Volumio API",
                 "ru": "Переход на новейший шаблон адаптера, исправление сбоев и адаптация к новейшему API Volumio",
@@ -14,18 +14,6 @@
                 "es": "Cambio a la plantilla de adaptador más reciente, corrección de fallos y adaptación a la API de Volumio más reciente.",
                 "pl": "Przejście na najnowszy szablon adaptera, naprawiono awarie i dostosowano do najnowszego interfejsu API Volumio",
                 "zh-cn": "切换到最新的适配器模板，修复了崩溃问题，并适应了最新的 Volumio API"
-            },
-            "0.1.3": {
-                "en": "Minor bugfixes",
-                "de": "Kleinere Fehlerbehebungen",
-                "ru": "Исправлены незначительные ошибки",
-                "pt": "Pequenas correcções de bugs",
-                "nl": "Kleine bugfixes",
-                "fr": "Corrections de bogues mineurs",
-                "it": "Correzioni di bug minori",
-                "es": "Corrección de errores menores",
-                "pl": "Drobne poprawki błędów",
-                "zh-cn": "小错误修复"
             },
             "0.1.2": {
                 "en": "Minor bugfixes",
