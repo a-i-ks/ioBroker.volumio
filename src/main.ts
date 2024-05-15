@@ -9,6 +9,7 @@ import axios, { AxiosInstance } from "axios";
 import express from "express";
 import bodyParser from "body-parser";
 import ipInfo from "ip";
+import e from "express";
 
 // Load your modules here, e.g.:
 // import * as fs from "fs";
@@ -93,7 +94,8 @@ class Volumio extends utils.Adapter {
                 this.log.debug(`Server is listening on ${ipInfo.address()}:${this.config.subscriptionPort}`);
                 this.subscribeToVolumioNotifications();
             } catch (error) {
-                this.log.error(`Starting server on ${this.config.subscriptionPort} for subscription mode failed: ${error}`);
+                this.log.error(`Starting server on ${this.config.subscriptionPort} for subscription mode failed: ${error}. Subscription mode will not be available.`);
+                this.config.subscribeToStateChanges = false;
             }
         } else if (this.config.subscribeToStateChanges && !this.config.subscriptionPort) {
             this.log.error("Subscription mode is activated, but port is not configured.");
@@ -438,8 +440,18 @@ class Volumio extends utils.Adapter {
         if (state.position) {
             this.setStateAsync("playbackInfo.position", state.position, true);
         }
-        if (state.title) {
+        if (state.title && state.track) {
+            if (state.title !== state.track) {
+                this.log.warn(`Title and track attibutes are both set but differ. Title will be set to ${state.title}`);
+                this.setStateAsync("playbackInfo.title", state.title, true);
+            }
             this.setStateAsync("playbackInfo.title", state.title, true);
+        }
+        else if (state.title) {
+            this.setStateAsync("playbackInfo.title", state.title, true);
+        }
+        else if (state.track) {
+            this.setStateAsync("playbackInfo.title", state.track, true);
         }
         if (state.artist) {
             this.setStateAsync("playbackInfo.artist", state.artist, true);
@@ -458,6 +470,9 @@ class Volumio extends utils.Adapter {
         }
         if (state.seek) {
             this.setStateAsync("playbackInfo.seek", state.seek, true);
+        }
+        if (state.duration) {
+            this.setStateAsync("playbackInfo.duration", state.duration, true);
         }
         if (state.samplerate) {
             this.setStateAsync("playbackInfo.samplerate", state.samplerate, true);
@@ -484,7 +499,7 @@ class Volumio extends utils.Adapter {
             this.setStateAsync("playbackInfo.volume", state.volume, true);
         }
         if (state.dbVolume) {
-            this.setStateAsync("playbackInfo.dbVolume", state.volume, true);
+            this.setStateAsync("playbackInfo.dbVolume", state.dbVolume, true);
         }
         if (state.disableVolumeControl) {
             this.setStateAsync("playbackInfo.disableVolumeControl", state.disableVolumeControl, true);
@@ -504,10 +519,6 @@ class Volumio extends utils.Adapter {
         if (state.service) {
             this.setStateAsync("playbackInfo.service", state.service, true);
         }
-        if (state.track) {
-            this.setStateAsync("playbackInfo.title", state.track, true);
-        }
-
     }
 
     private updateSystemInfo(systemInfo: any) : void {
@@ -670,7 +681,7 @@ class Volumio extends utils.Adapter {
             if (response.data?.response?.toLowerCase().includes("success")) {
                 this.log.debug(`Volume set to ${value}`);
                 this.setStateAsync("playbackInfo.volume", value, true);
-                this.setStateAsync("player.volume", value, true);
+                this.setStateAsync("player.volume", value);
             } else {
                 this.log.warn(`Volume setting failed: ${response.data}`);
             }

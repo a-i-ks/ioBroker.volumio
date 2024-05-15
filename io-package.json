@@ -624,6 +624,18 @@
             "native": {}
         },
         {
+            "_id": "playbackInfo.codec",
+            "type": "state",
+            "common": {
+                "role": "text",
+                "name": "Codec of current track",
+                "type": "string",
+                "read": true,
+                "write": false
+            },
+            "native": {}
+        },
+        {
             "_id": "playbackInfo.seek",
             "type": "state",
             "common": {
@@ -757,11 +769,22 @@
             "native": {}
         },
         {
+            "_id": "playbackInfo.dbVolume",
+            "type": "state",
+            "common": {
+                "name": "Volume in dB",
+                "type": "number",
+                "read": true,
+                "write": true
+            },
+            "native": {}
+        },
+        {
             "_id": "playbackInfo.disableVolumeControl",
             "type": "state",
             "common": {
                 "role": "indicator",
-                "name": "Shuffle  playmode activated",
+                "name": "Volume control disabled",
                 "type": "boolean",
                 "read": true,
                 "write": false
