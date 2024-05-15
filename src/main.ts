@@ -339,7 +339,7 @@ class Volumio extends utils.Adapter {
             if (response.data?.success) {
                 this.log.debug("Subscription to volumio push notifications successful");
             } else {
-                this.log.error(`Subscription to volumio push notifications failed: ${response.data}`);
+                this.log.error(`Subscription to volumio push notifications failed: ${JSON.stringify(response?.data)}`);
             }
         }).catch(err => {
             this.log.error(`Subscription to volumio push notifications failed: ${err.message}`);
@@ -376,7 +376,7 @@ class Volumio extends utils.Adapter {
             if (response.data?.success) {
                 this.log.debug("Unsubscription from volumio push notifications successful");
             } else {
-                this.log.error(`Unsubscription from volumio push notifications failed: ${response.data}`);
+                this.log.error(`Unsubscription from volumio push notifications failed: ${JSON.stringify(response?.data)}`);
             }
         }).catch(err => {
             this.log.error(`Unsubscription from volumio push notifications failed: ${err.message}`);
@@ -437,6 +437,8 @@ class Volumio extends utils.Adapter {
     }
 
     private updatePlayerState(state: any) : void {
+        //TODO: remove this debug log
+        this.log.debug(`Updating player state ...`);
         if (state.status) {
             this.setStateAsync("playbackInfo.status", state.status, true);
         }
@@ -475,6 +477,7 @@ class Volumio extends utils.Adapter {
             this.setStateAsync("playbackInfo.seek", state.seek, true);
         }
         if (state.duration) {
+            this.log.debug(`Set Duration: ${state.duration}`);
             this.setStateAsync("playbackInfo.duration", state.duration, true);
         }
         if (state.samplerate) {

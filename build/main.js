@@ -260,7 +260,7 @@ class Volumio extends utils.Adapter {
       if ((_a2 = response.data) == null ? void 0 : _a2.success) {
         this.log.debug("Subscription to volumio push notifications successful");
       } else {
-        this.log.error(`Subscription to volumio push notifications failed: ${response.data}`);
+        this.log.error(`Subscription to volumio push notifications failed: ${JSON.stringify(response == null ? void 0 : response.data)}`);
       }
     }).catch((err) => {
       this.log.error(`Subscription to volumio push notifications failed: ${err.message}`);
@@ -296,7 +296,7 @@ class Volumio extends utils.Adapter {
       if ((_a2 = response.data) == null ? void 0 : _a2.success) {
         this.log.debug("Unsubscription from volumio push notifications successful");
       } else {
-        this.log.error(`Unsubscription from volumio push notifications failed: ${response.data}`);
+        this.log.error(`Unsubscription from volumio push notifications failed: ${JSON.stringify(response == null ? void 0 : response.data)}`);
       }
     }).catch((err) => {
       this.log.error(`Unsubscription from volumio push notifications failed: ${err.message}`);
@@ -355,6 +355,7 @@ class Volumio extends utils.Adapter {
     });
   }
   updatePlayerState(state) {
+    this.log.debug(`Updating player state ...`);
     if (state.status) {
       this.setStateAsync("playbackInfo.status", state.status, true);
     }
@@ -391,6 +392,7 @@ class Volumio extends utils.Adapter {
       this.setStateAsync("playbackInfo.seek", state.seek, true);
     }
     if (state.duration) {
+      this.log.debug(`Set Duration: ${state.duration}`);
       this.setStateAsync("playbackInfo.duration", state.duration, true);
     }
     if (state.samplerate) {
