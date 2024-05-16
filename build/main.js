@@ -59,8 +59,8 @@ class Volumio extends utils.Adapter {
     if (this.config.checkConnection) {
       let interval = this.config.checkConnectionInterval;
       if (!interval || !isNumber(interval)) {
-        this.log.error(`Invalid connection check interval setting. Will be set to 30s`);
-        interval = 30;
+        this.log.error(`Invalid connection check interval setting. Will be set to 60s`);
+        interval = 60;
       }
       this.checkConnectionInterval = setInterval(this.checkConnection, interval * 1e3, this);
     }
@@ -416,6 +416,7 @@ class Volumio extends utils.Adapter {
     }
     if (state.volume) {
       this.setStateAsync("playbackInfo.volume", state.volume, true);
+      this.setStateAsync("player.volume", state.volume, true);
     }
     if (state.dbVolume) {
       this.setStateAsync("playbackInfo.dbVolume", state.dbVolume, true);
@@ -425,6 +426,7 @@ class Volumio extends utils.Adapter {
     }
     if (state.mute !== void 0) {
       this.setStateAsync("playbackInfo.mute", state.mute, true);
+      this.setStateAsync("player.muted", state.mute, true);
     }
     if (state.stream !== void 0) {
       this.setStateAsync("playbackInfo.stream", state.stream, true);
@@ -507,7 +509,7 @@ class Volumio extends utils.Adapter {
       if ((_b = (_a2 = response.data) == null ? void 0 : _a2.response) == null ? void 0 : _b.toLowerCase().includes("success")) {
         this.log.debug("Volume muted");
         this.setStateAsync("playbackInfo.mute", true, true);
-        this.setStateAsync("player.mute", true, true);
+        this.setStateAsync("player.muted", true, true);
       } else {
         this.log.warn(`Volume muting failed: ${response.data}`);
       }
@@ -522,7 +524,7 @@ class Volumio extends utils.Adapter {
       if ((_b = (_a2 = response.data) == null ? void 0 : _a2.response) == null ? void 0 : _b.toLowerCase().includes("success")) {
         this.log.debug("Volume unmuted");
         this.setStateAsync("playbackInfo.mute", false, true);
-        this.setStateAsync("player.mute", false, true);
+        this.setStateAsync("player.muted", false, true);
       } else {
         this.log.warn(`Volume unmuting failed: ${response.data}`);
       }
@@ -608,7 +610,7 @@ class Volumio extends utils.Adapter {
       if ((_b = (_a2 = response.data) == null ? void 0 : _a2.response) == null ? void 0 : _b.toLowerCase().includes("success")) {
         this.log.debug(`Volume set to ${value}`);
         this.setStateAsync("playbackInfo.volume", value, true);
-        this.setStateAsync("player.volume", value);
+        this.setStateAsync("player.volume", value, true);
       } else {
         this.log.warn(`Volume setting failed: ${response.data}`);
       }

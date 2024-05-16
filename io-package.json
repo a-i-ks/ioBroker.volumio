@@ -118,7 +118,7 @@
         "subscriptionPort": 3042,
         "volumeSteps": 10,
         "checkConnection": true,
-        "checkConnectionInterval": 30
+        "checkConnectionInterval": 60
     },
     "objects": [],
     "instanceObjects": [
