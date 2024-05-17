@@ -75,18 +75,14 @@
             "André Iske <andre.iske@mailbox.org>"
         ],
         "keywords": [
-            "ioBroker",
             "volumio",
-            "hifi",
-            "smart home",
-            "home automation"
+            "hifi"
         ],
         "licenseInformation": {
             "type": "free",
             "license": "MIT"
         },
         "platform": "Javascript/Node.js",
-        "main": "build/main.js",
         "icon": "volumio.png",
         "enabled": true,
         "extIcon": "https://raw.githubusercontent.com/a-i-ks/ioBroker.volumio/master/admin/volumio.png",
