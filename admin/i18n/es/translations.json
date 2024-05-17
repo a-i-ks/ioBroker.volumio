@@ -1,3 +1,11 @@
 {
-    "volumio adapter settings": "Ajustes del adaptador para volumio"
+    "volumio adapter settings": "Ajustes del adaptador para volumio",
+    "Volumio Adapter Configuration": "Configuración del adaptador Volumeo",
+    "Volumino host address": "Dirección de host de Volumino",
+    "Check connection to Volumio": "Comprobar conexión con Volumio",
+    "Interval in s": "Intervalo en s",
+    "Volume steps": "Pasos de volumen",
+    "The adapter can be used in a event driven fashion. Volumio can notify via POST calls when state changes.\nThis is a much more efficient and elegant way to retrieve informations, instead of continuously polling the relevant information.": "El adaptador se puede utilizar de forma controlada por eventos. Volumio puede notificar mediante llamadas POST cuando cambia el estado.\nEsta es una forma mucho más eficiente y elegante de recuperar información, en lugar de sondear continuamente la información relevante.",
+    "Subscribe to player state changes": "Suscríbete a los cambios de estado del jugador.",
+    "Subscription port": "Puerto de suscripción"
 }

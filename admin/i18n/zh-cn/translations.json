@@ -1,3 +1,11 @@
 {
-    "volumio adapter settings": "volumio的适配器设置"
+    "volumio adapter settings": "volumio的适配器设置",
+    "Volumio Adapter Configuration": "Volumio 适配器配置",
+    "Volumino host address": "卷主机地址",
+    "Check connection to Volumio": "检查与 Volumio 的连接",
+    "Interval in s": "间隔（秒）",
+    "Volume steps": "音量步长",
+    "The adapter can be used in a event driven fashion. Volumio can notify via POST calls when state changes.\nThis is a much more efficient and elegant way to retrieve informations, instead of continuously polling the relevant information.": "该适配器可以以事件驱动的方式使用。当状态发生变化时，Volumio 可以通过 POST 调用进行通知。\n这是一种更高效、更优雅的信息检索方式，而不是不断轮询相关信息。",
+    "Subscribe to player state changes": "订阅玩家状态变化",
+    "Subscription port": "订阅端口"
 }

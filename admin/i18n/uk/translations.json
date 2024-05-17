@@ -1,3 +1,11 @@
 {
-    "volumio adapter settings": "Налаштування адаптера для volumio"
+    "volumio adapter settings": "Налаштування адаптера для volumio",
+    "Volumio Adapter Configuration": "Конфігурація адаптера Volumio",
+    "Volumino host address": "Адреса хоста Volumino",
+    "Check connection to Volumio": "Перевірте підключення до Volumio",
+    "Interval in s": "Інтервал у с",
+    "Volume steps": "Об'ємні кроки",
+    "The adapter can be used in a event driven fashion. Volumio can notify via POST calls when state changes.\nThis is a much more efficient and elegant way to retrieve informations, instead of continuously polling the relevant information.": "Адаптер можна використовувати в режимі подій. Volumio може повідомляти через виклики POST про зміну стану.\nЦе набагато більш ефективний і елегантний спосіб отримання інформації замість постійного опитування відповідної інформації.",
+    "Subscribe to player state changes": "Підпишіться на зміни стану гравців",
+    "Subscription port": "Порт підписки"
 }

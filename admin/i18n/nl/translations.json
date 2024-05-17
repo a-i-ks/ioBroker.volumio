@@ -1,3 +1,11 @@
 {
-    "volumio adapter settings": "Adapterinstellingen voor volumio"
+    "volumio adapter settings": "Adapterinstellingen voor volumio",
+    "Volumio Adapter Configuration": "Configuratie van Volumio-adapter",
+    "Volumino host address": "Volumino-hostadres",
+    "Check connection to Volumio": "Controleer de verbinding met Volumio",
+    "Interval in s": "Interval in s",
+    "Volume steps": "Volumestappen",
+    "The adapter can be used in a event driven fashion. Volumio can notify via POST calls when state changes.\nThis is a much more efficient and elegant way to retrieve informations, instead of continuously polling the relevant information.": "De adapter kan gebeurtenisgestuurd worden gebruikt. Volumio kan via POST-oproepen op de hoogte stellen wanneer de status verandert.\nDit is een veel efficiëntere en elegantere manier om informatie op te halen, in plaats van voortdurend de relevante informatie op te vragen.",
+    "Subscribe to player state changes": "Abonneer je op veranderingen in de spelersstatus",
+    "Subscription port": "Abonnementspoort"
 }

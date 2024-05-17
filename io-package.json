@@ -13,7 +13,8 @@
                 "it": "Passaggio al modello di adattatore più recente, correzione degli arresti anomali e adattamento alle nuove API di Volumio.",
                 "es": "Cambio a la plantilla de adaptador más reciente, corrección de fallos y adaptación a la API de Volumio más reciente.",
                 "pl": "Przejście na najnowszy szablon adaptera, naprawiono awarie i dostosowano do najnowszego interfejsu API Volumio",
-                "zh-cn": "切换到最新的适配器模板，修复了崩溃问题，并适应了最新的 Volumio API"
+                "zh-cn": "切换到最新的适配器模板，修复了崩溃问题，并适应了最新的 Volumio API",
+                "uk": "Перейти до найновішого шаблону адаптера, виправлено збої та адаптовано до найновішого Volumio API"
             },
             "0.1.2": {
                 "en": "Minor bugfixes",
@@ -25,7 +26,8 @@
                 "it": "Correzioni di bug minori",
                 "es": "Corrección de errores menores",
                 "pl": "Drobne poprawki błędów",
-                "zh-cn": "小错误修复"
+                "zh-cn": "小错误修复",
+                "uk": "Незначні виправлення помилок"
             },
             "0.1.0": {
                 "en": "Switched codebase to TypeScript",
@@ -37,7 +39,8 @@
                 "it": "Codice di base commutato su TypeScript",
                 "es": "Cambió la base de código a TypeScript",
                 "pl": "Przełączenie bazy kodowej na TypeScript",
-                "zh-cn": "首次出版"
+                "zh-cn": "首次出版",
+                "uk": "Змінено кодову базу на TypeScript"
             },
             "0.0.1": {
                 "en": "First tests and modifications of the template",
@@ -47,10 +50,12 @@
                 "fr": "Premiers tests et modifications du modèle",
                 "nl": "Eerste tests en wijzigingen van het sjabloon",
                 "es": "Primeras pruebas y modificaciones de la plantilla",
-                "it": "Prime prove e modifiche del modello"
+                "it": "Prime prove e modifiche del modello",
+                "pl": "Pierwsze testy i modyfikacje szablonu",
+                "uk": "Перші тести та модифікації шаблону",
+                "zh-cn": "模板的首次测试和修改"
             }
         },
-        "title": "Volumio Remote Control",
         "titleLang": {
             "en": "Volumio Remote Control",
             "de": "Volumio Remote Control",
@@ -59,7 +64,10 @@
             "nl": "Volumio Remote Control",
             "fr": "Volumio Remote Control",
             "it": "Volumio Remote Control",
-            "es": "Volumio Remote Control"
+            "es": "Volumio Remote Control",
+            "pl": "Volumio Remote Control",
+            "uk": "Volumio Remote Control",
+            "zh-cn": "Volumio Remote Control"
         },
         "desc": {
             "en": "Control a Volumio instance on the local network using the Rest API of Volumio.",
@@ -69,7 +77,10 @@
             "fr": "Contrôlez une instance Volumio sur le réseau local à l'aide de l'API Rest de Volumio.",
             "nl": "Bestuur een Volumio instance op het lokale netwerk met behulp van Volumio's Rest API.",
             "it": "Controllare un'istanza di Volumio sulla rete locale utilizzando l'API Rest di Volumio.",
-            "es": "Controle una instancia de Volumio en la red local utilizando la Rest API de Volumio."
+            "es": "Controle una instancia de Volumio en la red local utilizando la Rest API de Volumio.",
+            "pl": "Kontroluj instancję Volumio w sieci lokalnej za pomocą interfejsu API Rest Volumio.",
+            "uk": "Керуйте примірником Volumio у локальній мережі за допомогою Rest API Volumio.",
+            "zh-cn": "使用 Volumio 的 Rest API 控制本地网络上的 Volumio 实例。"
         },
         "authors": [
             "André Iske <andre.iske@mailbox.org>"
@@ -451,7 +462,7 @@
                 "name": "Clear the queue",
                 "type": "boolean",
                 "read": false,
-                "write": true            
+                "write": true
             },
             "native": {}
         },
@@ -463,7 +474,7 @@
                 "name": "Clear the queue",
                 "type": "boolean",
                 "read": false,
-                "write": true            
+                "write": true
             },
             "native": {}
         },
@@ -475,7 +486,7 @@
                 "name": "Shuffle playmode activated",
                 "type": "boolean",
                 "read": true,
-                "write": true            
+                "write": true
             },
             "native": {}
         },
@@ -487,7 +498,7 @@
                 "name": "State of repeat track mode",
                 "type": "boolean",
                 "read": true,
-                "write": true            
+                "write": true
             },
             "native": {}
         },
@@ -499,7 +510,7 @@
                 "name": "Toggle repeat track mode",
                 "type": "boolean",
                 "read": true,
-                "write": false            
+                "write": false
             },
             "native": {}
         },
@@ -699,7 +710,7 @@
                 "name": "Shuffle mode 0 - none, 1 - all, 2 - one",
                 "type": "number",
                 "read": true,
-                "write": true            
+                "write": true
             },
             "native": {}
         },
