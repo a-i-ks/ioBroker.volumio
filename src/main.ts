@@ -472,6 +472,9 @@ class Volumio extends utils.Adapter {
         if (state.trackType !== undefined) {
             this.setStateAsync("playbackInfo.trackType", state.trackType, true);
         }
+        if (state.codec !== undefined) {
+            this.setStateAsync("playbackInfo.codec", state.codec, true);
+        }
         if (state.seek !== undefined) {
             this.setStateAsync("playbackInfo.seek", state.seek, true);
         }
@@ -696,7 +699,7 @@ class Volumio extends utils.Adapter {
         });
     }
 
-    private volumeUp(): void {
+    private async volumeUp(): Promise<void> {
         let volumeSteps = this.config.volumeSteps;
         if (!volumeSteps || volumeSteps > 100 || volumeSteps < 0) {
             this.log.warn(`Invalid volume step setting. volumeSteps will be set to 10`);
@@ -709,9 +712,10 @@ class Volumio extends utils.Adapter {
             } else {
                 this.log.warn("Volume state not found. Setting volume to 0");
                 currentVolume =  0;
-            }});
-        const newVolumeValue = ((currentVolume + volumeSteps) > 100) ? 100 : currentVolume + volumeSteps;
-        this.volumeSetTo(newVolumeValue);
+            }
+            const newVolumeValue = ((currentVolume + volumeSteps) > 100) ? 100 : currentVolume + volumeSteps;
+            this.volumeSetTo(newVolumeValue);
+        });
     }
 
     private volumeDown(): void {
@@ -727,9 +731,10 @@ class Volumio extends utils.Adapter {
             } else {
                 this.log.warn("Volume state not found. Setting volume to 0");
                 currentVolume =  0;
-            }});
-        const newVolumeValue = ((currentVolume - volumeSteps) < 0) ? 0 : currentVolume - volumeSteps;
-        this.volumeSetTo(newVolumeValue);
+            }
+            const newVolumeValue = ((currentVolume - volumeSteps) < 0) ? 0 : currentVolume - volumeSteps;
+            this.volumeSetTo(newVolumeValue);
+        });
     }
 
     private setRandomPlayback(random: any): void {
