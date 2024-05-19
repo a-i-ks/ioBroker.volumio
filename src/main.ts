@@ -442,7 +442,7 @@ class Volumio extends utils.Adapter {
             this.setStateAsync("playbackInfo.status", state.status, true);
         }
         if (state.position !== undefined) {
-            this.setStateAsync("playbackInfo.position", state.position, true);
+            this.setStateAsync("playbackInfo.position", String(state.position), true);
         }
         if (state.title !== undefined && state.track !== undefined) {
             if (state.title !== state.track) {
