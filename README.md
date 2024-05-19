@@ -51,7 +51,11 @@ Todo:
 
 
 ## Changelog
-### 0.2.0
+<!--
+  Placeholder for the next version (at the beginning of the line):
+  ### **WORK IN PROGRESS**
+-->
+### **WORK IN PROGRESS**
  * (André Iske) 
     - Updated to newest ioBroker adapter structure 
     - Fixed adapter crashes
