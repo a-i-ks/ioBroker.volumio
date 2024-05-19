@@ -154,7 +154,7 @@
             "_id": "info.id",
             "type": "state",
             "common": {
-                "role": "value",
+                "role": "info.serial",
                 "name": "Volumio Id",
                 "type": "string",
                 "read": true,
@@ -165,7 +165,7 @@
             "_id": "info.host",
             "type": "state",
             "common": {
-                "role": "value",
+                "role": "info.address",
                 "name": "Volumio host address",
                 "type": "string",
                 "read": true,
@@ -176,7 +176,7 @@
             "_id": "info.name",
             "type": "state",
             "common": {
-                "role": "value",
+                "role": "info.name",
                 "name": "Volumio instance name",
                 "type": "string",
                 "read": true,
@@ -187,7 +187,7 @@
             "_id": "info.type",
             "type": "state",
             "common": {
-                "role": "value",
+                "role": "text",
                 "name": "Volumio instance type",
                 "type": "string",
                 "read": true,
@@ -198,7 +198,7 @@
             "_id": "info.serviceName",
             "type": "state",
             "common": {
-                "role": "value",
+                "role": "text",
                 "name": "Volumio service name",
                 "type": "string",
                 "read": true,
@@ -209,7 +209,7 @@
             "_id": "info.systemversion",
             "type": "state",
             "common": {
-                "role": "value",
+                "role": "info.firmware",
                 "name": "Volumio system version",
                 "type": "string",
                 "read": true,
@@ -220,7 +220,7 @@
             "_id": "info.builddate",
             "type": "state",
             "common": {
-                "role": "value",
+                "role": "info.firmware",
                 "name": "Volumio system version build date",
                 "type": "string",
                 "read": true,
@@ -231,7 +231,7 @@
             "_id": "info.variant",
             "type": "state",
             "common": {
-                "role": "value",
+                "role": "text",
                 "name": "Volumio system variant",
                 "type": "string",
                 "read": true,
@@ -242,7 +242,7 @@
             "_id": "info.hardware",
             "type": "state",
             "common": {
-                "role": "value",
+                "role": "info.hardware",
                 "name": "Volumio system hardware",
                 "type": "string",
                 "read": true,
@@ -253,7 +253,7 @@
             "_id": "info.isPremiumDevice",
             "type": "state",
             "common": {
-                "role": "value",
+                "role": "state",
                 "name": "Volumio Premium Device",
                 "type": "boolean",
                 "read": true,
@@ -264,7 +264,7 @@
             "_id": "info.isVolumioProduct",
             "type": "state",
             "common": {
-                "role": "value",
+                "role": "state",
                 "name": "Volumio Product",
                 "type": "boolean",
                 "read": true,
@@ -309,7 +309,7 @@
             "_id": "player.playN",
             "type": "state",
             "common": {
-                "role": "value",
+                "role": "state",
                 "name": "Play n-th track on queue",
                 "type": "number",
                 "read": true,
@@ -458,19 +458,7 @@
             "_id": "queue.clearQueue",
             "type": "state",
             "common": {
-                "role": "button",
-                "name": "Clear the queue",
-                "type": "boolean",
-                "read": false,
-                "write": true
-            },
-            "native": {}
-        },
-        {
-            "_id": "queue.clearQueue",
-            "type": "state",
-            "common": {
-                "role": "button",
+                "role": "media.clear",
                 "name": "Clear the queue",
                 "type": "boolean",
                 "read": false,
@@ -540,7 +528,7 @@
             "common": {
                 "role": "media.track",
                 "name": "Position in playlist of current track",
-                "type": "number",
+                "type": "string",
                 "read": true,
                 "write": false
             },
@@ -658,7 +646,7 @@
             "_id": "playbackInfo.samplerate",
             "type": "state",
             "common": {
-                "role": "text",
+                "role": "media.bitrate",
                 "name": "Samplerate of current track",
                 "type": "string",
                 "read": true,
@@ -682,7 +670,7 @@
             "_id": "playbackInfo.channels",
             "type": "state",
             "common": {
-                "role": "value",
+                "role": "state",
                 "name": "Number of channels of current track",
                 "type": "number",
                 "read": true,
@@ -767,6 +755,7 @@
             "_id": "playbackInfo.dbVolume",
             "type": "state",
             "common": {
+                "role": "state",
                 "name": "Volume in dB",
                 "type": "number",
                 "read": true,
