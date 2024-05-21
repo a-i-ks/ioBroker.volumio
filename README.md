@@ -56,7 +56,9 @@ Todo:
   ### **WORK IN PROGRESS**
 -->
 ### **WORK IN PROGRESS**
-
+ * (André Iske) 
+    - Updated to newest ioBroker adapter structure 
+    - Fixed adapter crashes
 ### 0.1.3
 * (André Iske) Security patches
 
