@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "volumio",
-    "version": "0.2.0",
+    "version": "0.1.2",
     "news": {
       "0.2.0": {
         "en": "(André Iske) \nUpdated to newest ioBroker adapter structure \nFixed adapter crashes",

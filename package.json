@@ -1,6 +1,6 @@
 {
   "name": "iobroker.volumio",
-  "version": "0.2.0",
+  "version": "0.1.2",
   "description": "Volumio Adapter for ioBroker",
   "author": {
     "name": "André Iske",
