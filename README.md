@@ -55,10 +55,11 @@ Todo:
   Placeholder for the next version (at the beginning of the line):
   ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.2.0 (2024-05-21)
  * (André Iske) 
     - Updated to newest ioBroker adapter structure 
     - Fixed adapter crashes
+
 ### 0.1.3
 * (André Iske) Security patches
 
