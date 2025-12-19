@@ -16,6 +16,74 @@
             "md": 6,
             "lg": 4
         },
+        "apiMode": {
+            "type": "select",
+            "label": "API Mode",
+            "options": [
+                {
+                    "value": "websocket",
+                    "label": "WebSocket (recommended)"
+                },
+                {
+                    "value": "rest",
+                    "label": "REST API"
+                }
+            ],
+            "default": "websocket",
+            "newLine": true,
+            "sm": 12,
+            "md": 6,
+            "lg": 4
+        },
+        "apiModeDescription": {
+            "type": "staticText",
+            "text": "WebSocket mode provides real-time updates and is more efficient. REST mode uses polling to check for state changes.",
+            "newLine": true,
+            "sm": 12
+        },
+        "pollInterval": {
+            "type": "number",
+            "label": "Poll interval (seconds)",
+            "min": 1,
+            "max": 60,
+            "default": 2,
+            "hidden": "data.apiMode !== 'rest'",
+            "help": "How often to check for state changes in REST mode",
+            "newLine": true,
+            "sm": 12,
+            "md": 6,
+            "lg": 4
+        },
+        "reconnectAttempts": {
+            "type": "number",
+            "label": "Reconnection attempts",
+            "min": 1,
+            "max": 20,
+            "default": 5,
+            "hidden": "data.apiMode !== 'websocket'",
+            "help": "Number of times to try reconnecting after connection loss",
+            "newLine": true,
+            "sm": 12,
+            "md": 6,
+            "lg": 4
+        },
+        "reconnectDelay": {
+            "type": "number",
+            "label": "Reconnection delay (seconds)",
+            "min": 1,
+            "max": 30,
+            "default": 2,
+            "hidden": "data.apiMode !== 'websocket'",
+            "help": "Wait time between reconnection attempts",
+            "sm": 12,
+            "md": 6,
+            "lg": 4
+        },
+        "dividerApi": {
+            "type": "divider",
+            "height": 3,
+            "newLine": true
+        },
         "checkConnection": {
             "type": "checkbox",
             "label": "Check connection to Volumio",
@@ -59,14 +127,16 @@
         },
         "descriptionForSubscribeToStateChanges": {
             "type": "staticText",
-            "text": "The adapter can be used in a event driven fashion. Volumio can notify via POST calls when state changes.\nThis is a much more efficient and elegant way to retrieve informations, instead of continuously polling the relevant information.",
+            "text": "DEPRECATED: HTTP Push notifications are only available in REST mode. For real-time updates, use WebSocket mode instead.\nVolumio can notify via POST calls when state changes. This requires REST mode to be enabled.",
             "newLine": true,
+            "hidden": "data.apiMode !== 'rest'",
             "sm": 12
         },
         "subscribeToStateChanges": {
             "type": "checkbox",
-            "label": "Subscribe to player state changes",
+            "label": "Subscribe to player state changes (deprecated)",
             "default": false,
+            "hidden": "data.apiMode !== 'rest'",
             "newLine": true,
             "sm": 12,
             "md": 6,
@@ -77,6 +147,7 @@
             "label": "Subscription port",
             "default": 3042,
             "disabled": "!data.subscribeToStateChanges",
+            "hidden": "data.apiMode !== 'rest'",
             "newLine": true,
             "sm": 12,
             "md": 6,

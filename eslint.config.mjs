@@ -38,6 +38,8 @@ export default [
             '@typescript-eslint/require-await': 'off',
             '@typescript-eslint/restrict-template-expressions': 'off',
             'jsdoc/require-param-description': 'off',
+            'jsdoc/require-jsdoc': 'off',
+            'jsdoc/no-blank-blocks': 'off',
         },
     },
 

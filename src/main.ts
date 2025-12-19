@@ -5,17 +5,33 @@
 // The adapter-core module gives you access to the core ioBroker functions
 // you need to create an adapter
 import * as utils from "@iobroker/adapter-core";
-import type { AxiosInstance } from "axios";
-import axios from "axios";
 import bodyParser from "body-parser";
 import express from "express";
 import * as os from "os";
+import type { IVolumioClient, VolumioState } from "./lib/volumioClient";
+import { VolumioClientFactory } from "./lib/volumioClientFactory";
+import type { ApiMode } from "./lib/volumioClientFactory";
 
-// Load your modules here, e.g.:
-// import * as fs from "fs";
+// Extend adapter config interface with new properties
+declare global {
+  namespace ioBroker {
+    interface AdapterConfig {
+      host: string;
+      apiMode: ApiMode;
+      pollInterval: number;
+      reconnectAttempts: number;
+      reconnectDelay: number;
+      subscribeToStateChanges: boolean;
+      subscriptionPort: number;
+      volumeSteps: number;
+      checkConnection: boolean;
+      checkConnectionInterval: number;
+    }
+  }
+}
 
 class Volumio extends utils.Adapter {
-  private axiosInstance: AxiosInstance | null = null;
+  private volumioClient: IVolumioClient | null = null;
   private checkConnectionInterval: NodeJS.Timeout | null = null;
   private httpServer;
   private httpServerInstance: any;
@@ -55,16 +71,63 @@ class Volumio extends utils.Adapter {
   }
 
   /**
+   * Handle state changes from Volumio client
+   */
+  private handleStateChange(state: VolumioState): void {
+    this.log.debug(`State change received: ${JSON.stringify(state)}`);
+    this.updatePlayerState(state);
+  }
+
+  /**
+   * Handle connection state changes from Volumio client
+   */
+  private handleConnectionChange(connected: boolean): void {
+    this.log.info(
+      `Connection to Volumio ${connected ? "established" : "lost"}`,
+    );
+    this.setState("info.connection", connected, true);
+  }
+
+  /**
+   * Connect to Volumio instance
+   */
+  private async connectToVolumio(): Promise<boolean> {
+    this.log.debug("Connecting to Volumio ...");
+    try {
+      await this.volumioClient?.connect();
+      this.log.info("Successfully connected to Volumio");
+      return true;
+    } catch (error) {
+      this.log.error(`Failed to connect to Volumio: ${error}`);
+      return false;
+    }
+  }
+
+  /**
    * Is called when databases are connected and adapter received configuration.
    */
   private async onReady(): Promise<void> {
     // Initialize your adapter here
 
-    // Setup axios instance
-    this.axiosInstance = axios.create({
-      baseURL: `http://${this.config.host}/api/v1/`,
-      timeout: 1000,
+    // Setup Volumio client using factory
+    const apiMode: ApiMode =
+      (this.config.apiMode as ApiMode) || "websocket";
+    const port = 3000; // Default Volumio port
+
+    this.volumioClient = VolumioClientFactory.create({
+      apiMode: apiMode,
+      host: this.config.host || "volumio.local",
+      port: port,
+      pollInterval: (this.config.pollInterval || 2) * 1000, // Convert to ms
+      reconnectAttempts: this.config.reconnectAttempts || 5,
+      reconnectDelay: (this.config.reconnectDelay || 2) * 1000, // Convert to ms
     });
+
+    // Register callbacks
+    this.volumioClient.onStateChange(this.handleStateChange.bind(this));
+    this.volumioClient.onConnectionChange(
+      this.handleConnectionChange.bind(this),
+    );
 
     // Reset the connection indicator during startup
     this.setState("info.connection", false, true);
@@ -72,8 +135,8 @@ class Volumio extends utils.Adapter {
     // Subscribe to all state changes in the 'volumio' namespace
     this.subscribeStates("*");
 
-    // Try to ping the Volumio host
-    const connectionSuccess = await this.pingVolumio();
+    // Try to connect to Volumio
+    const connectionSuccess = await this.connectToVolumio();
 
     // Setup connection check interval
     if (this.config.checkConnection) {
@@ -476,15 +539,15 @@ class Volumio extends utils.Adapter {
   async pingVolumio(): Promise<boolean> {
     this.log.debug("Pinging volumio ...");
     try {
-      this.log.debug("Volumio ping success");
-      const response = await this.axiosInstance?.get("ping");
-      this.setState("info.connection", true, true);
-      if (response?.data !== "pong") {
-        this.log.warn(
-          `Volumio API did not respond correctly to ping. Please report this issue to the developer!`,
-        );
+      const result = await this.volumioClient?.ping();
+      if (result) {
+        this.log.debug("Volumio ping success");
+        this.setState("info.connection", true, true);
+        return true;
+      } else {
+        this.setState("info.connection", false, true);
+        return false;
       }
-      return true;
     } catch (error) {
       this.log.error(
         `Connection to Volumio host (${this.config.host}) failed: ${error}`,
@@ -503,37 +566,28 @@ class Volumio extends utils.Adapter {
     }
   }
 
-  private getSystemInfo(): void {
-    this.axiosInstance
-      ?.get("getSystemInfo")
-      .then((response) => {
-        this.log.debug(
-          `getSystemInfo response: ${JSON.stringify(response?.data)}`,
-        );
-        if (response.data) {
-          this.updateSystemInfo(response.data);
-        }
-        if (response.data?.state) {
-          this.updatePlayerState(response.data.state);
-        }
-      })
-      .catch((error) => {
-        this.log.error(`Error getting system info: ${error}`);
-      });
+  private async getSystemInfo(): Promise<void> {
+    try {
+      const info = await this.volumioClient?.getSystemInfo();
+      this.log.debug(`getSystemInfo response: ${JSON.stringify(info)}`);
+      if (info) {
+        this.updateSystemInfo(info);
+      }
+    } catch (error) {
+      this.log.error(`Error getting system info: ${error}`);
+    }
   }
 
-  private getPlayerState(): void {
-    this.axiosInstance
-      ?.get("getState")
-      .then((response) => {
-        this.log.debug(`getState response: ${JSON.stringify(response?.data)}`);
-        if (response.data) {
-          this.updatePlayerState(response.data);
-        }
-      })
-      .catch((error) => {
-        this.log.error(`Error getting player state: ${error}`);
-      });
+  private async getPlayerState(): Promise<void> {
+    try {
+      const state = await this.volumioClient?.getState();
+      this.log.debug(`getState response: ${JSON.stringify(state)}`);
+      if (state) {
+        this.updatePlayerState(state);
+      }
+    } catch (error) {
+      this.log.error(`Error getting player state: ${error}`);
+    }
   }
 
   private updatePlayerState(state: any): void {
