@@ -5,6 +5,8 @@
 // The adapter-core module gives you access to the core ioBroker functions
 // you need to create an adapter
 import * as utils from "@iobroker/adapter-core";
+import type { AxiosInstance } from "axios";
+import axios from "axios";
 import bodyParser from "body-parser";
 import express from "express";
 import * as os from "os";
@@ -13,6 +15,7 @@ import { VolumioClientFactory } from "./lib/volumioClientFactory";
 import type { ApiMode } from "./lib/volumioClientFactory";
 
 // Extend adapter config interface with new properties
+/* eslint-disable @typescript-eslint/no-namespace */
 declare global {
   namespace ioBroker {
     interface AdapterConfig {
@@ -29,9 +32,11 @@ declare global {
     }
   }
 }
+/* eslint-enable @typescript-eslint/no-namespace */
 
 class Volumio extends utils.Adapter {
   private volumioClient: IVolumioClient | null = null;
+  private axiosInstance: AxiosInstance | null = null; // Only for push notification endpoints (deprecated)
   private checkConnectionInterval: NodeJS.Timeout | null = null;
   private httpServer;
   private httpServerInstance: any;
@@ -72,6 +77,8 @@ class Volumio extends utils.Adapter {
 
   /**
    * Handle state changes from Volumio client
+   *
+   * @param state
    */
   private handleStateChange(state: VolumioState): void {
     this.log.debug(`State change received: ${JSON.stringify(state)}`);
@@ -80,6 +87,8 @@ class Volumio extends utils.Adapter {
 
   /**
    * Handle connection state changes from Volumio client
+   *
+   * @param connected
    */
   private handleConnectionChange(connected: boolean): void {
     this.log.info(
@@ -110,8 +119,7 @@ class Volumio extends utils.Adapter {
     // Initialize your adapter here
 
     // Setup Volumio client using factory
-    const apiMode: ApiMode =
-      (this.config.apiMode as ApiMode) || "websocket";
+    const apiMode: ApiMode = this.config.apiMode || "websocket";
     const port = 3000; // Default Volumio port
 
     this.volumioClient = VolumioClientFactory.create({
@@ -122,6 +130,14 @@ class Volumio extends utils.Adapter {
       reconnectAttempts: this.config.reconnectAttempts || 5,
       reconnectDelay: (this.config.reconnectDelay || 2) * 1000, // Convert to ms
     });
+
+    // Setup axios instance for push notification endpoints (deprecated, REST-only)
+    if (apiMode === "rest" && this.config.subscribeToStateChanges) {
+      this.axiosInstance = axios.create({
+        baseURL: `http://${this.config.host}/api/v1/`,
+        timeout: 5000,
+      });
+    }
 
     // Register callbacks
     this.volumioClient.onStateChange(this.handleStateChange.bind(this));
@@ -267,22 +283,33 @@ class Volumio extends utils.Adapter {
    *
    * @param callback
    */
-  private onUnload(callback: () => void): void {
+  private async onUnload(callback: () => void): Promise<void> {
     try {
-      this.unsubscribeFromVolumioNotifications();
-      // Here you must clear all timeouts or intervals that may still be active
-      // clearTimeout(timeout1);
-      // clearTimeout(timeout2);
-      // ...
-      // clearInterval(interval1);
+      // Disconnect Volumio client
+      if (this.volumioClient) {
+        await this.volumioClient.disconnect();
+        this.volumioClient = null;
+      }
 
+      // Unsubscribe from push notifications (deprecated, REST-only)
+      if (
+        this.config.subscribeToStateChanges &&
+        this.config.apiMode === "rest"
+      ) {
+        this.unsubscribeFromVolumioNotifications();
+      }
+
+      // Clear connection check interval
       if (this.checkConnectionInterval) {
         clearInterval(this.checkConnectionInterval);
         this.checkConnectionInterval = null;
       }
 
-      // terminate express http server
-      this.httpServerInstance.close();
+      // Terminate express http server (used for push notifications in REST mode)
+      if (this.httpServerInstance) {
+        this.httpServerInstance.close();
+      }
+
       callback();
     } catch (_e) {
       callback();
@@ -544,10 +571,9 @@ class Volumio extends utils.Adapter {
         this.log.debug("Volumio ping success");
         this.setState("info.connection", true, true);
         return true;
-      } else {
-        this.setState("info.connection", false, true);
-        return false;
       }
+      this.setState("info.connection", false, true);
+      return false;
     } catch (error) {
       this.log.error(
         `Connection to Volumio host (${this.config.host}) failed: ${error}`,
@@ -731,267 +757,168 @@ class Volumio extends utils.Adapter {
     }
   }
 
-  private nextTrack(): void {
-    this.axiosInstance
-      ?.get("commands/?cmd=next")
-      .then((response) => {
-        if (response.data?.response?.toLowerCase().includes("success")) {
-          this.log.debug("Next track");
-        } else {
-          this.log.warn(`Next track failed: ${response.data}`);
-        }
-      })
-      .catch((error) => {
-        this.log.error(`Error playing next track: ${error}`);
-      });
+  private async nextTrack(): Promise<void> {
+    try {
+      await this.volumioClient?.next();
+      this.log.debug("Next track");
+    } catch (error) {
+      this.log.error(`Error playing next track: ${error}`);
+    }
   }
 
-  private previousTrack(): void {
-    this.axiosInstance
-      ?.get("commands/?cmd=prev")
-      .then((response) => {
-        if (response.data?.response?.toLowerCase().includes("success")) {
-          this.log.debug("Previous track");
-        } else {
-          this.log.warn(`Previous track failed: ${response.data}`);
-        }
-      })
-      .catch((error) => {
-        this.log.error(`Error playing previous track: ${error}`);
-      });
+  private async previousTrack(): Promise<void> {
+    try {
+      await this.volumioClient?.previous();
+      this.log.debug("Previous track");
+    } catch (error) {
+      this.log.error(`Error playing previous track: ${error}`);
+    }
   }
 
-  private volumeMute(): void {
-    this.axiosInstance
-      ?.get("commands/?cmd=volume&volume=mute")
-      .then((response) => {
-        if (response.data?.response?.toLowerCase().includes("success")) {
-          this.log.debug("Volume muted");
-          this.setStateAsync("playbackInfo.mute", true, true);
-          this.setStateAsync("player.muted", true, true);
-        } else {
-          this.log.warn(`Volume muting failed: ${response.data}`);
-        }
-      })
-      .catch((error) => {
-        this.log.error(`Error muting volume: ${error}`);
-      });
+  private async volumeMute(): Promise<void> {
+    try {
+      await this.volumioClient?.mute();
+      this.log.debug("Volume muted");
+      this.setStateAsync("playbackInfo.mute", true, true);
+      this.setStateAsync("player.muted", true, true);
+    } catch (error) {
+      this.log.error(`Error muting volume: ${error}`);
+    }
   }
 
-  private volumeUnmute(): void {
-    this.axiosInstance
-      ?.get("commands/?cmd=volume&volume=unmute")
-      .then((response) => {
-        if (response.data?.response?.toLowerCase().includes("success")) {
-          this.log.debug("Volume unmuted");
-          this.setStateAsync("playbackInfo.mute", false, true);
-          this.setStateAsync("player.muted", false, true);
-        } else {
-          this.log.warn(`Volume unmuting failed: ${response.data}`);
-        }
-      })
-      .catch((error) => {
-        this.log.error(`Error unmuting volume: ${error}`);
-      });
+  private async volumeUnmute(): Promise<void> {
+    try {
+      await this.volumioClient?.unmute();
+      this.log.debug("Volume unmuted");
+      this.setStateAsync("playbackInfo.mute", false, true);
+      this.setStateAsync("player.muted", false, true);
+    } catch (error) {
+      this.log.error(`Error unmuting volume: ${error}`);
+    }
   }
 
-  private playbackPause(): void {
-    this.axiosInstance
-      ?.get("commands/?cmd=pause")
-      .then((response) => {
-        if (response.data?.response?.toLowerCase().includes("success")) {
-          this.log.debug("Playback paused");
-          this.setStateAsync("playbackInfo.status", "pause", true);
-        } else {
-          this.log.warn(`Playback pausing failed: ${response.data}`);
-        }
-      })
-      .catch((error) => {
-        this.log.error(`Error pausing playback: ${error}`);
-      });
+  private async playbackPause(): Promise<void> {
+    try {
+      await this.volumioClient?.pause();
+      this.log.debug("Playback paused");
+      this.setStateAsync("playbackInfo.status", "pause", true);
+    } catch (error) {
+      this.log.error(`Error pausing playback: ${error}`);
+    }
   }
 
-  private playbackPlay(n?: any): void {
+  private async playbackPlay(n?: any): Promise<void> {
     if (n && !isNumber(n)) {
       this.log.warn("player.playN state change. Invalid state value passed");
       return;
     }
-    const cmdTxt = `play${n ? `&N=${n}` : ``}`;
-    this.axiosInstance
-      ?.get(`commands/?cmd=${cmdTxt}`)
-      .then((response) => {
-        if (response.data?.response?.toLowerCase().includes("success")) {
-          this.log.debug("Playback started");
+    try {
+      await this.volumioClient?.play(n);
+      this.log.debug("Playback started");
+      this.setStateAsync("playbackInfo.status", "play", true);
+    } catch (error) {
+      this.log.error(`Error starting playback: ${error}`);
+    }
+  }
+
+  private async playbackStop(): Promise<void> {
+    try {
+      await this.volumioClient?.stop();
+      this.log.debug("Playback stopped");
+      this.setStateAsync("playbackInfo.status", "stop", true);
+    } catch (error) {
+      this.log.error(`Error stopping playback: ${error}`);
+    }
+  }
+
+  private async playbackToggle(): Promise<void> {
+    try {
+      await this.volumioClient?.toggle();
+      this.log.debug("Playback toggled");
+      this.getState("playbackInfo.status", (_err, state) => {
+        if (state?.val === "play") {
+          this.setStateAsync("playbackInfo.status", "pause", true);
+        } else if (state?.val === "pause" || state?.val === "stop") {
           this.setStateAsync("playbackInfo.status", "play", true);
-        } else {
-          this.log.warn(`Playback starting failed: ${response.data}`);
         }
-      })
-      .catch((error) => {
-        this.log.error(`Error starting playback: ${error}`);
       });
+    } catch (error) {
+      this.log.error(`Error toggling playback: ${error}`);
+    }
   }
 
-  private playbackStop(): void {
-    this.axiosInstance
-      ?.get("commands/?cmd=stop")
-      .then((response) => {
-        if (response.data?.response?.toLowerCase().includes("success")) {
-          this.log.debug("Playback stopped");
-          this.setStateAsync("playbackInfo.status", "stop", true);
-        } else {
-          this.log.warn(`Playback stopping failed: ${response.data}`);
-        }
-      })
-      .catch((error) => {
-        this.log.error(`Error stopping playback: ${error}`);
-      });
-  }
-
-  private playbackToggle(): void {
-    this.axiosInstance
-      ?.get("commands/?cmd=toggle")
-      .then((response) => {
-        if (response.data?.response?.toLowerCase().includes("success")) {
-          this.log.debug("Playback toggled");
-          this.getState("playbackInfo.status", (err, state) => {
-            if (state?.val === "play") {
-              this.setStateAsync("playbackInfo.status", "pause", true);
-            } else if (state?.val === "pause" || state?.val === "stop") {
-              this.setStateAsync("playbackInfo.status", "play", true);
-            }
-          });
-        } else {
-          this.log.warn(`Playback toggling failed: ${response.data}`);
-        }
-      })
-      .catch((error) => {
-        this.log.error(`Error toggling playback: ${error}`);
-      });
-  }
-
-  private volumeSetTo(value: any): void {
+  private async volumeSetTo(value: any): Promise<void> {
     if (!isNumber(value)) {
       this.log.warn("player.volume state change. Invalid state value passed");
       return;
     }
-    this.axiosInstance
-      ?.get(`commands/?cmd=volume&volume=${value}`)
-      .then((response) => {
-        if (response.data?.response?.toLowerCase().includes("success")) {
-          this.log.debug(`Volume set to ${value}`);
-          this.setStateAsync("playbackInfo.volume", value, true);
-          this.setStateAsync("player.volume", value, true);
-        } else {
-          this.log.warn(`Volume setting failed: ${response.data}`);
-        }
-      })
-      .catch((error) => {
-        this.log.error(`Error setting volume: ${error}`);
-      });
+    try {
+      await this.volumioClient?.setVolume(value);
+      this.log.debug(`Volume set to ${value}`);
+      this.setStateAsync("playbackInfo.volume", value, true);
+      this.setStateAsync("player.volume", value, true);
+    } catch (error) {
+      this.log.error(`Error setting volume: ${error}`);
+    }
   }
 
   private async volumeUp(): Promise<void> {
-    let volumeSteps = this.config.volumeSteps;
-    if (!volumeSteps || volumeSteps > 100 || volumeSteps < 0) {
-      this.log.warn(
-        `Invalid volume step setting. volumeSteps will be set to 10`,
-      );
-      volumeSteps = 10;
+    try {
+      await this.volumioClient?.volumePlus();
+      this.log.debug("Volume increased");
+    } catch (error) {
+      this.log.error(`Error increasing volume: ${error}`);
     }
-    let currentVolume = 0;
-    this.getState("playbackInfo.volume", (err, state) => {
-      if (state) {
-        currentVolume = state.val as number;
-      } else {
-        this.log.warn("Volume state not found. Setting volume to 0");
-        currentVolume = 0;
-      }
-      const newVolumeValue =
-        currentVolume + volumeSteps > 100 ? 100 : currentVolume + volumeSteps;
-      this.volumeSetTo(newVolumeValue);
-    });
   }
 
-  private volumeDown(): void {
-    let volumeSteps = this.config.volumeSteps;
-    if (!volumeSteps || volumeSteps > 100 || volumeSteps < 0) {
-      this.log.warn(
-        `Invalid volume step setting. volumeSteps will be set to 10`,
-      );
-      volumeSteps = 10;
+  private async volumeDown(): Promise<void> {
+    try {
+      await this.volumioClient?.volumeMinus();
+      this.log.debug("Volume decreased");
+    } catch (error) {
+      this.log.error(`Error decreasing volume: ${error}`);
     }
-    let currentVolume = 0;
-    this.getState("playbackInfo.volume", (err, state) => {
-      if (state) {
-        currentVolume = state.val as number;
-      } else {
-        this.log.warn("Volume state not found. Setting volume to 0");
-        currentVolume = 0;
-      }
-      const newVolumeValue =
-        currentVolume - volumeSteps < 0 ? 0 : currentVolume - volumeSteps;
-      this.volumeSetTo(newVolumeValue);
-    });
   }
 
-  private setRandomPlayback(random: any): void {
+  private async setRandomPlayback(random: any): Promise<void> {
     if (typeof random !== "boolean") {
       this.log.warn("player.random state change. Invalid state value passed");
       return;
     }
-    this.axiosInstance
-      ?.get(`commands/?cmd=random&value=${random}`)
-      .then((response) => {
-        if (response.data?.response?.toLowerCase().includes("success")) {
-          this.log.debug(`Random play set to ${random}`);
-          this.setStateAsync("playbackInfo.random", random, true);
-          this.setStateAsync("queue.shuffleMode", random ? 1 : 0, true);
-        } else {
-          this.log.warn(`Random play setting failed: ${response.data}`);
-        }
-      })
-      .catch((error) => {
-        this.log.error(`Error setting random play: ${error}`);
-      });
+    try {
+      await this.volumioClient?.setRandom(random);
+      this.log.debug(`Random play set to ${random}`);
+      this.setStateAsync("playbackInfo.random", random, true);
+      this.setStateAsync("queue.shuffleMode", random ? 1 : 0, true);
+    } catch (error) {
+      this.log.error(`Error setting random play: ${error}`);
+    }
   }
 
-  private clearQueue(): void {
-    this.axiosInstance
-      ?.get(`commands/?cmd=clearQueue`)
-      .then((response) => {
-        if (response.data?.response?.toLowerCase().includes("success")) {
-          this.log.debug(`Queue cleared`);
-        } else {
-          this.log.warn(`Queue clearing failed: ${response.data}`);
-        }
-      })
-      .catch((error) => {
-        this.log.error(`Error clearing queue: ${error}`);
-      });
+  private async clearQueue(): Promise<void> {
+    try {
+      await this.volumioClient?.clearQueue();
+      this.log.debug(`Queue cleared`);
+    } catch (error) {
+      this.log.error(`Error clearing queue: ${error}`);
+    }
   }
 
-  private setRepeatTrack(repeat: any): void {
+  private async setRepeatTrack(repeat: any): Promise<void> {
     if (typeof repeat !== "boolean") {
       this.log.warn(
         "player.repeatTrackState state change. Invalid state value passed",
       );
       return;
     }
-    this.axiosInstance
-      ?.get(`commands/?cmd=repeat&value=${repeat}`)
-      .then((response) => {
-        if (response.data?.response?.toLowerCase().includes("success")) {
-          this.log.debug(`Repeat track set to ${repeat}`);
-          this.setStateAsync("playbackInfo.repeatSingle", repeat, true);
-          this.setStateAsync("queue.repeatSingle", repeat ? 1 : 0, true);
-        } else {
-          this.log.warn(`Repeat track setting failed: ${response.data}`);
-        }
-      })
-      .catch((error) => {
-        this.log.error(`Error setting repeat track: ${error}`);
-      });
+    try {
+      await this.volumioClient?.setRepeatSingle(repeat);
+      this.log.debug(`Repeat track set to ${repeat}`);
+      this.setStateAsync("playbackInfo.repeatSingle", repeat, true);
+      this.setStateAsync("queue.repeatSingle", repeat ? 1 : 0, true);
+    } catch (error) {
+      this.log.error(`Error setting repeat track: ${error}`);
+    }
   }
 }
 
