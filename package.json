@@ -1,7 +1,7 @@
 {
   "name": "iobroker.volumio",
-  "version": "0.2.0",
-  "description": "Volumio Adapter for ioBroker",
+  "version": "0.9.0",
+  "description": "Volumio Adapter for ioBroker - Control Volumio music players via WebSocket or REST API",
   "author": {
     "name": "André Iske",
     "email": "andre.iske@mailbox.org"

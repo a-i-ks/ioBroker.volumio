@@ -1,20 +1,33 @@
 {
   "common": {
     "name": "volumio",
-    "version": "0.2.0",
+    "version": "0.9.0",
     "news": {
+      "0.9.0": {
+        "en": "(André Iske) Major release: Dual API support (WebSocket + REST), real-time updates, comprehensive refactoring, ESLint 9 migration, NPM Trusted Publishing, all dependencies updated",
+        "de": "(André Iske) Hauptversion: Dual-API-Unterstützung (WebSocket + REST), Echtzeit-Updates, umfassende Refaktorierung, ESLint 9 Migration, NPM Trusted Publishing, alle Abhängigkeiten aktualisiert",
+        "ru": "(André Iske) Основной выпуск: поддержка двух API (WebSocket + REST), обновления в реальном времени, комплексный рефакторинг, миграция на ESLint 9, NPM Trusted Publishing, все зависимости обновлены",
+        "pt": "(André Iske) Versão principal: Suporte duplo de API (WebSocket + REST), atualizações em tempo real, refatoração abrangente, migração ESLint 9, NPM Trusted Publishing, todas as dependências atualizadas",
+        "nl": "(André Iske) Grote release: Dual API-ondersteuning (WebSocket + REST), real-time updates, uitgebreide refactoring, ESLint 9 migratie, NPM Trusted Publishing, alle afhankelijkheden bijgewerkt",
+        "fr": "(André Iske) Version majeure: Support double API (WebSocket + REST), mises à jour en temps réel, refactorisation complète, migration ESLint 9, NPM Trusted Publishing, toutes les dépendances mises à jour",
+        "it": "(André Iske) Versione principale: Supporto doppia API (WebSocket + REST), aggiornamenti in tempo reale, refactoring completo, migrazione ESLint 9, NPM Trusted Publishing, tutte le dipendenze aggiornate",
+        "es": "(André Iske) Versión principal: Soporte dual de API (WebSocket + REST), actualizaciones en tiempo real, refactorización integral, migración ESLint 9, NPM Trusted Publishing, todas las dependencias actualizadas",
+        "pl": "(André Iske) Główne wydanie: Podwójne wsparcie API (WebSocket + REST), aktualizacje w czasie rzeczywistym, kompleksowy refaktoring, migracja ESLint 9, NPM Trusted Publishing, wszystkie zależności zaktualizowane",
+        "uk": "(Андре Іске) Основний реліз: Підтримка подвійного API (WebSocket + REST), оновлення в реальному часі, комплексний рефакторинг, міграція ESLint 9, NPM Trusted Publishing, всі залежності оновлено",
+        "zh-cn": "(安德烈·伊斯克) 主要版本：双API支持（WebSocket + REST），实时更新，全面重构，ESLint 9迁移，NPM可信发布，所有依赖项已更新"
+      },
       "0.2.0": {
-        "en": "(André Iske) \nUpdated to newest ioBroker adapter structure \nFixed adapter crashes",
-        "de": "(André Iske)\nAktualisiert auf die neueste ioBroker Adapterstruktur\nAdapterabstürze behoben",
-        "ru": "(André Iske)\nОбновлено до новейшей структуры адаптера ioBroker\nИсправленные крушения адаптера",
-        "pt": "(André Iske)\nAtualizado para a mais nova estrutura do adaptador ioBroker\nAdaptador fixo trava",
-        "nl": "(André Iske)\nBijgewerkt naar de nieuwste ioBroker-adapterstructuur\nVaste adapter crashes",
-        "fr": "(André Iske)\nMise à jour à la nouvelle structure d'adaptateur ioBroker\nCrashs d'adaptateurs fixes",
-        "it": "(André Iske)\nAggiornato alla nuova struttura adattatore ioBroker\nAttacchi fissi dell'adattatore",
-        "es": "(André Iske)\nActualizado a la nueva estructura de adaptador ioBroker\nSe bloquea el adaptador fijo",
-        "pl": "(André Iske)\nAktualizacja do najnowszej struktury adaptera jOBroker\nNaprawiono awarię adaptera",
-        "uk": "(Анре Іське)\nОновлено до нової структури адаптера ioBroker\nВиправлені аварійні випадки адаптера",
-        "zh-cn": "(安德烈·伊斯克)\n更新到最新的ioBroker适配器结构\n固定适配器崩溃"
+        "en": "(André Iske) Updated to newest ioBroker adapter structure, Fixed adapter crashes",
+        "de": "(André Iske) Aktualisiert auf die neueste ioBroker Adapterstruktur, Adapterabstürze behoben",
+        "ru": "(André Iske) Обновлено до новейшей структуры адаптера ioBroker, Исправленные крушения адаптера",
+        "pt": "(André Iske) Atualizado para a mais nova estrutura do adaptador ioBroker, Adaptador fixo trava",
+        "nl": "(André Iske) Bijgewerkt naar de nieuwste ioBroker-adapterstructuur, Vaste adapter crashes",
+        "fr": "(André Iske) Mise à jour à la nouvelle structure d'adaptateur ioBroker, Crashs d'adaptateurs fixes",
+        "it": "(André Iske) Aggiornato alla nuova struttura adattatore ioBroker, Attacchi fissi dell'adattatore",
+        "es": "(André Iske) Actualizado a la nueva estructura de adaptador ioBroker, Se bloquea el adaptador fijo",
+        "pl": "(André Iske) Aktualizacja do najnowszej struktury adaptera jOBroker, Naprawiono awarię adaptera",
+        "uk": "(Анре Іське) Оновлено до нової структури адаптера ioBroker, Виправлені аварійні випадки адаптера",
+        "zh-cn": "(安德烈·伊斯克) 更新到最新的ioBroker适配器结构, 固定适配器崩溃"
       },
       "0.1.2": {
         "en": "Minor bugfixes",
