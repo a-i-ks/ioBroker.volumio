@@ -8,7 +8,7 @@ import * as utils from "@iobroker/adapter-core";
 import axios, { AxiosInstance } from "axios";
 import bodyParser from "body-parser";
 import express from "express";
-import ipInfo from "ip";
+import * as os from "os";
 
 // Load your modules here, e.g.:
 // import * as fs from "fs";
@@ -34,6 +34,24 @@ class Volumio extends utils.Adapter {
         this.httpServer = express();
         this.httpServer.use(bodyParser.urlencoded({ extended: false }));
         this.httpServer.use(bodyParser.json());
+    }
+
+    /**
+     * Get local IP address for push notifications
+     */
+    private getLocalIp(): string {
+        const interfaces = os.networkInterfaces();
+        for (const name of Object.keys(interfaces)) {
+            const iface = interfaces[name];
+            if (iface) {
+                for (const alias of iface) {
+                    if (alias.family === "IPv4" && !alias.internal) {
+                        return alias.address;
+                    }
+                }
+            }
+        }
+        return "127.0.0.1"; // Fallback to localhost
     }
 
     /**
@@ -90,7 +108,7 @@ class Volumio extends utils.Adapter {
                             this.log.error(`Starting server on ${this.config.subscriptionPort} for subscription mode failed: ${error}`);
                         }
                     });
-                this.log.debug(`Server is listening on ${ipInfo.address()}:${this.config.subscriptionPort}`);
+                this.log.debug(`Server is listening on ${this.getLocalIp()}:${this.config.subscriptionPort}`);
                 this.subscribeToVolumioNotifications();
             } catch (error) {
                 this.log.error(`Starting server on ${this.config.subscriptionPort} for subscription mode failed: ${error}. Subscription mode will not be available.`);
@@ -330,12 +348,12 @@ class Volumio extends utils.Adapter {
             return;
         }
         this.setStateAsync("info.connection", true, true);
-        if (urls.includes(`${ipInfo.address()}:${this.config.subscriptionPort}`)) {
+        if (urls.includes(`${this.getLocalIp()}:${this.config.subscriptionPort}`)) {
             this.log.debug("Already subscribed to volumio push notifications");
             return;
         }
         // enter local http server as notification url
-        const data = { "url": `http://${ipInfo.address()}:${this.config.subscriptionPort}/volumiostatus` };
+        const data = { "url": `http://${this.getLocalIp()}:${this.config.subscriptionPort}/volumiostatus` };
         this.axiosInstance?.post("pushNotificationUrls", data).then(response => {
             if (response.data?.success) {
                 this.log.debug("Subscription to volumio push notifications successful");
@@ -367,12 +385,12 @@ class Volumio extends utils.Adapter {
         if (!urls) {
             return;
         }
-        if (!urls.includes(`${ipInfo.address()}:${this.config.subscriptionPort}`)) {
+        if (!urls.includes(`${this.getLocalIp()}:${this.config.subscriptionPort}`)) {
             this.log.debug("Subscription was not active. No need to unsubscribe")
             return
         }
         // remove local http server from notification urls
-        const data = { "url": `http://${ipInfo.address()}:${this.config.subscriptionPort}/volumiostatus` };
+        const data = { "url": `http://${this.getLocalIp()}:${this.config.subscriptionPort}/volumiostatus` };
         this.axiosInstance?.delete("pushNotificationUrls", data).then(response => {
             if (response.data?.success) {
                 this.log.debug("Unsubscription from volumio push notifications successful");
