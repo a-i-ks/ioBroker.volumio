@@ -11,20 +11,29 @@
             "type": "text",
             "label": "Volumino Host Address",
             "default": "volumio.local",
-            "newLine": true
+            "newLine": true,
+            "sm": 12,
+            "md": 6,
+            "lg": 4
         },
         "checkConnection": {
             "type": "checkbox",
             "label": "Check connection to Volumio",
             "default": true,
-            "newLine": true
+            "newLine": true,
+            "sm": 12,
+            "md": 6,
+            "lg": 4
         },
         "checkConnectionInterval": {
             "type": "number",
             "label": "Interval in s",
             "default": 30,
             "disabled": "!data.checkConnection",
-            "newLine": true
+            "newLine": true,
+            "sm": 12,
+            "md": 6,
+            "lg": 4
         },
         "divider1": {
             "type": "divider",
@@ -37,7 +46,10 @@
             "min": 1,
             "max": 100,
             "default": 5,
-            "newLine": true
+            "newLine": true,
+            "sm": 12,
+            "md": 6,
+            "lg": 4
         },
         "divider2": {
             "type": "divider",
@@ -48,21 +60,27 @@
         "descriptionForSubscribeToStateChanges": {
             "type": "staticText",
             "text": "The adapter can be used in a event driven fashion. Volumio can notify via POST calls when state changes.\nThis is a much more efficient and elegant way to retrieve informations, instead of continuously polling the relevant information.",
-            "newLine": true
-    
+            "newLine": true,
+            "sm": 12
         },
         "subscribeToStateChanges": {
             "type": "checkbox",
             "label": "Subscribe to player state changes",
             "default": false,
-            "newLine": true
+            "newLine": true,
+            "sm": 12,
+            "md": 6,
+            "lg": 4
         },
         "subscriptionPort": {
             "type": "number",
             "label": "Subscription port",
             "default": 3042,
             "disabled": "!data.subscribeToStateChanges",
-            "newLine": true
+            "newLine": true,
+            "sm": 12,
+            "md": 6,
+            "lg": 4
         }
     }
 }

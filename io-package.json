@@ -41,19 +41,6 @@
         "pl": "Przełączenie bazy kodowej na TypeScript",
         "zh-cn": "首次出版",
         "uk": "Змінено кодову базу на TypeScript"
-      },
-      "0.0.1": {
-        "en": "First tests and modifications of the template",
-        "de": "Erste Tests und Abänderungen vom Template",
-        "ru": "Первые испытания и модификации шаблона",
-        "pt": "Primeiros testes e modificações do modelo",
-        "fr": "Premiers tests et modifications du modèle",
-        "nl": "Eerste tests en wijzigingen van het sjabloon",
-        "es": "Primeras pruebas y modificaciones de la plantilla",
-        "it": "Prime prove e modifiche del modello",
-        "pl": "Pierwsze testy i modyfikacje szablonu",
-        "uk": "Перші тести та модифікації шаблону",
-        "zh-cn": "模板的首次测试和修改"
       }
     },
     "titleLang": {
@@ -110,12 +97,12 @@
     },
     "dependencies": [
       {
-        "js-controller": ">=4.0.24"
+        "js-controller": ">=5.0.19"
       }
     ],
     "globalDependencies": [
       {
-        "admin": ">=6.13.16"
+        "admin": ">=6.17.14"
       }
     ]
   },
