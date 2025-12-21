@@ -569,12 +569,14 @@ class Volumio extends utils.Adapter {
     if (state.consume !== void 0) {
       this.setStateAsync("playbackInfo.consume", state.consume, true);
     }
-    if (state.volume) {
-      this.setStateAsync("playbackInfo.volume", state.volume, true);
-      this.setStateAsync("player.volume", state.volume, true);
+    if (state.volume !== void 0) {
+      const volume = typeof state.volume === "string" ? parseInt(state.volume, 10) : state.volume;
+      this.setStateAsync("playbackInfo.volume", volume, true);
+      this.setStateAsync("player.volume", volume, true);
     }
-    if (state.dbVolume) {
-      this.setStateAsync("playbackInfo.dbVolume", state.dbVolume, true);
+    if (state.dbVolume !== void 0) {
+      const dbVolume = typeof state.dbVolume === "string" ? parseFloat(state.dbVolume) : state.dbVolume;
+      this.setStateAsync("playbackInfo.dbVolume", dbVolume, true);
     }
     if (state.disableVolumeControl !== void 0) {
       this.setStateAsync(
@@ -588,7 +590,8 @@ class Volumio extends utils.Adapter {
       this.setStateAsync("player.muted", state.mute, true);
     }
     if (state.stream !== void 0) {
-      this.setStateAsync("playbackInfo.stream", state.stream, true);
+      const stream = typeof state.stream === "boolean" ? String(state.stream) : state.stream || "";
+      this.setStateAsync("playbackInfo.stream", stream, true);
     }
     if (state.updatedb !== void 0) {
       this.setStateAsync("playbackInfo.updatedb", state.updatedb, true);
@@ -739,11 +742,12 @@ class Volumio extends utils.Adapter {
       this.log.warn("player.volume state change. Invalid state value passed");
       return;
     }
+    const volumeValue = typeof value === "string" ? parseInt(value, 10) : value;
     try {
-      await ((_a = this.volumioClient) == null ? void 0 : _a.setVolume(value));
-      this.log.debug(`Volume set to ${value}`);
-      this.setStateAsync("playbackInfo.volume", value, true);
-      this.setStateAsync("player.volume", value, true);
+      await ((_a = this.volumioClient) == null ? void 0 : _a.setVolume(volumeValue));
+      this.log.debug(`Volume set to ${volumeValue}`);
+      this.setStateAsync("playbackInfo.volume", volumeValue, true);
+      this.setStateAsync("player.volume", volumeValue, true);
     } catch (error) {
       this.log.error(`Error setting volume: ${error}`);
     }
