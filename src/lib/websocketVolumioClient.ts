@@ -270,46 +270,34 @@ export class WebSocketVolumioClient implements IVolumioClient {
 		if (volume < 0 || volume > 100) {
 			throw new Error("Volume must be between 0 and 100");
 		}
-		// Volumio doesn't reliably respond to volume commands via WebSocket
-		// Use REST API fallback for volume control
-		this.logger.debug(`Setting volume to ${volume} via REST API fallback...`);
-		try {
-			const axios = await import("axios");
-			const response = await axios.default.get(
-				`http://${this.config.host}:${this.config.port}/api/v1/commands/?cmd=volume&volume=${volume}`,
-				{ timeout: 5000 }
-			);
-			this.logger.silly(`Volume command response: ${JSON.stringify(response.data)}`);
-			if (!response.data?.response?.toLowerCase().includes("success")) {
-				throw new Error(`Volume command failed: ${JSON.stringify(response.data)}`);
-			}
-		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : String(error);
-			this.logger.error(`setVolume() via REST fallback failed: ${errorMessage}`);
-			throw error;
-		}
+		// Volumio WebSocket API: io.emit('volume', 90) - send number directly, not wrapped in object
+		await this.sendCommand("volume", volume);
 	}
 
 	async volumePlus(): Promise<void> {
-		// Not used in current implementation - volume up/down use setVolume with calculated values
-		await this.sendCommand("volume", { value: "plus" });
+		// Volumio WebSocket API: io.emit('volume', '+')
+		await this.sendCommand("volume", "+");
 	}
 
 	async volumeMinus(): Promise<void> {
-		// Not used in current implementation - volume up/down use setVolume with calculated values
-		await this.sendCommand("volume", { value: "minus" });
+		// Volumio WebSocket API: io.emit('volume', '-')
+		await this.sendCommand("volume", "-");
 	}
 
 	async mute(): Promise<void> {
-		await this.sendCommand("mute");
+		// Volumio WebSocket API: io.emit('mute', '')
+		await this.sendCommand("mute", "");
 	}
 
 	async unmute(): Promise<void> {
-		await this.sendCommand("unmute");
+		// Volumio WebSocket API: io.emit('unmute', '')
+		await this.sendCommand("unmute", "");
 	}
 
 	async toggleMute(): Promise<void> {
-		await this.sendCommand("mute", { value: "toggle" });
+		// Volumio doesn't have a native toggle, so we'll use mute command
+		// The client using this should implement toggle logic
+		await this.sendCommand("mute", "");
 	}
 
 	// ==================== Queue Management ====================
@@ -334,7 +322,7 @@ export class WebSocketVolumioClient implements IVolumioClient {
 
 	// ==================== Private Methods ====================
 
-	private async sendCommand<T = void>(command: string, data?: Record<string, unknown>): Promise<T> {
+	private async sendCommand<T = void>(command: string, data?: unknown): Promise<T> {
 		return new Promise((resolve, reject) => {
 			if (!this.socket || !this.connected) {
 				const error = "Not connected to Volumio";
@@ -343,7 +331,11 @@ export class WebSocketVolumioClient implements IVolumioClient {
 				return;
 			}
 
-			this.logger.debug(`Sending command: ${command}${data ? ` with data: ${JSON.stringify(data)}` : ""}`);
+			// Format data for logging
+			const dataStr = data !== undefined
+				? (typeof data === 'object' ? JSON.stringify(data) : String(data))
+				: "";
+			this.logger.debug(`Sending command: ${command}${dataStr ? ` with data: ${dataStr}` : ""}`);
 
 			// For commands that return data (like getState)
 			if (command === "getState") {
@@ -363,7 +355,7 @@ export class WebSocketVolumioClient implements IVolumioClient {
 				});
 			} else {
 				// For commands that don't return data
-				if (data) {
+				if (data !== undefined) {
 					this.socket.emit(command, data);
 				} else {
 					this.socket.emit(command);
