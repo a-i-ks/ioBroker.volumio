@@ -8,249 +8,316 @@
 import type { AxiosInstance } from "axios";
 import axios from "axios";
 import type {
-  IVolumioClient,
-  VolumioState,
-  VolumioSystemInfo,
-  StateChangeCallback,
-  ConnectionStateCallback,
+	IVolumioClient,
+	VolumioState,
+	VolumioSystemInfo,
+	StateChangeCallback,
+	ConnectionStateCallback,
 } from "./volumioClient";
+import type { Logger } from "./logger";
+import { NoOpLogger } from "./logger";
 
 export interface RestClientConfig {
-  host: string;
-  port: number;
-  pollInterval?: number; // Polling interval in ms (default: 2000)
+	host: string;
+	port: number;
+	pollInterval?: number; // Polling interval in ms (default: 2000)
+	logger?: Logger; // Logger instance (optional)
 }
 
 export class RestVolumioClient implements IVolumioClient {
-  private config: RestClientConfig;
-  private axiosInstance: AxiosInstance;
-  private connected: boolean = false;
-  private pollTimer?: NodeJS.Timeout;
-  private lastState?: VolumioState;
-  private stateChangeCallbacks: StateChangeCallback[] = [];
-  private connectionChangeCallbacks: ConnectionStateCallback[] = [];
+	private config: Required<RestClientConfig>;
+	private axiosInstance: AxiosInstance;
+	private connected: boolean = false;
+	private logger: Logger;
+	private pollTimer?: NodeJS.Timeout;
+	private lastState?: VolumioState;
+	private stateChangeCallbacks: StateChangeCallback[] = [];
+	private connectionChangeCallbacks: ConnectionStateCallback[] = [];
 
-  constructor(config: RestClientConfig) {
-    this.config = {
-      ...config,
-      pollInterval: config.pollInterval || 2000,
-    };
+	constructor(config: RestClientConfig) {
+		this.config = {
+			...config,
+			pollInterval: config.pollInterval ?? 2000,
+			logger: config.logger ?? new NoOpLogger(),
+		};
 
-    this.axiosInstance = axios.create({
-      baseURL: `http://${config.host}:${config.port}`,
-      timeout: 5000,
-    });
-  }
+		this.logger = this.config.logger;
+		this.logger.debug(`REST client initialized: ${this.config.host}:${this.config.port} (poll: ${this.config.pollInterval}ms)`);
 
-  async connect(): Promise<void> {
-    try {
-      // Test connection by getting state
-      await this.getState();
-      this.connected = true;
-      this.notifyConnectionChange(true);
+		this.axiosInstance = axios.create({
+			baseURL: `http://${config.host}:${config.port}`,
+			timeout: 5000,
+		});
+	}
 
-      // Start polling for state changes
-      this.startPolling();
-    } catch (error) {
-      this.connected = false;
-      this.notifyConnectionChange(false);
-      throw new Error(`Failed to connect to Volumio: ${error}`);
-    }
-  }
+	async connect(): Promise<void> {
+		this.logger.info(`Connecting to Volumio via REST API: http://${this.config.host}:${this.config.port}`);
 
-  async disconnect(): Promise<void> {
-    this.stopPolling();
-    this.connected = false;
-    this.notifyConnectionChange(false);
-  }
+		try {
+			this.logger.debug("Testing connection with getState() call...");
+			// Test connection by getting state
+			const state = await this.getState();
+			this.logger.silly(`Initial state: ${JSON.stringify(state)}`);
 
-  isConnected(): boolean {
-    return this.connected;
-  }
+			this.connected = true;
+			this.notifyConnectionChange(true);
+			this.logger.info("REST API connection successful");
 
-  async ping(): Promise<boolean> {
-    try {
-      await this.axiosInstance.get("/api/v1/getState");
-      return true;
-    } catch {
-      return false;
-    }
-  }
+			// Start polling for state changes
+			this.logger.debug(`Starting state polling (interval: ${this.config.pollInterval}ms)`);
+			this.startPolling();
+		} catch (error) {
+			this.connected = false;
+			this.notifyConnectionChange(false);
 
-  onStateChange(callback: StateChangeCallback): void {
-    this.stateChangeCallbacks.push(callback);
-  }
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			const errorDetails = axios.isAxiosError(error)
+				? {
+						status: error.response?.status,
+						statusText: error.response?.statusText,
+						code: error.code,
+					}
+				: {};
 
-  onConnectionChange(callback: ConnectionStateCallback): void {
-    this.connectionChangeCallbacks.push(callback);
-  }
+			this.logger.error(
+				`Failed to connect to Volumio at ${this.config.host}:${this.config.port}: ${errorMessage} ${JSON.stringify(errorDetails)}`,
+			);
 
-  async getState(): Promise<VolumioState> {
-    const response =
-      await this.axiosInstance.get<VolumioState>("/api/v1/getState");
-    return response.data;
-  }
+			throw new Error(`Failed to connect to Volumio at ${this.config.host}:${this.config.port} - ${errorMessage}`);
+		}
+	}
 
-  async getSystemInfo(): Promise<VolumioSystemInfo> {
-    const response = await this.axiosInstance.get<VolumioSystemInfo>(
-      "/api/v1/getSystemInfo",
-    );
-    return response.data;
-  }
+	async disconnect(): Promise<void> {
+		this.logger.info("Disconnecting REST client...");
+		this.stopPolling();
+		this.connected = false;
+		this.notifyConnectionChange(false);
+		this.logger.debug("REST client disconnected");
+	}
 
-  // ==================== Playback Control ====================
+	isConnected(): boolean {
+		return this.connected;
+	}
 
-  async play(n?: number): Promise<void> {
-    const cmd = n !== undefined ? `play&N=${n}` : "play";
-    await this.sendCommand(cmd);
-  }
+	async ping(): Promise<boolean> {
+		this.logger.debug("Pinging Volumio...");
+		try {
+			await this.axiosInstance.get("/api/v1/getState");
+			this.logger.debug("Ping successful");
+			return true;
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			this.logger.warn(`Ping failed: ${errorMessage}`);
+			return false;
+		}
+	}
 
-  async pause(): Promise<void> {
-    await this.sendCommand("pause");
-  }
+	onStateChange(callback: StateChangeCallback): void {
+		this.stateChangeCallbacks.push(callback);
+	}
 
-  async stop(): Promise<void> {
-    await this.sendCommand("stop");
-  }
+	onConnectionChange(callback: ConnectionStateCallback): void {
+		this.connectionChangeCallbacks.push(callback);
+	}
 
-  async toggle(): Promise<void> {
-    await this.sendCommand("toggle");
-  }
+	async getState(): Promise<VolumioState> {
+		this.logger.debug("Fetching player state...");
+		try {
+			const response = await this.axiosInstance.get<VolumioState>("/api/v1/getState");
+			this.logger.silly(`State response: ${JSON.stringify(response.data)}`);
+			return response.data;
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			this.logger.error(`getState() failed: ${errorMessage}`);
+			throw error;
+		}
+	}
 
-  async next(): Promise<void> {
-    await this.sendCommand("next");
-  }
+	async getSystemInfo(): Promise<VolumioSystemInfo> {
+		this.logger.debug("Fetching system info...");
+		try {
+			const response = await this.axiosInstance.get<VolumioSystemInfo>("/api/v1/getSystemInfo");
+			this.logger.silly(`System info response: ${JSON.stringify(response.data)}`);
+			return response.data;
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			this.logger.error(`getSystemInfo() failed: ${errorMessage}`);
+			throw error;
+		}
+	}
 
-  async previous(): Promise<void> {
-    await this.sendCommand("prev");
-  }
+	// ==================== Playback Control ====================
 
-  async seek(position: number): Promise<void> {
-    await this.sendCommand(`seek&position=${position}`);
-  }
+	async play(n?: number): Promise<void> {
+		const cmd = n !== undefined ? `play&N=${n}` : "play";
+		await this.sendCommand(cmd);
+	}
 
-  // ==================== Volume Control ====================
+	async pause(): Promise<void> {
+		await this.sendCommand("pause");
+	}
 
-  async setVolume(volume: number): Promise<void> {
-    if (volume < 0 || volume > 100) {
-      throw new Error("Volume must be between 0 and 100");
-    }
-    await this.sendCommand(`volume&volume=${volume}`);
-  }
+	async stop(): Promise<void> {
+		await this.sendCommand("stop");
+	}
 
-  async volumePlus(): Promise<void> {
-    await this.sendCommand("volume&volume=plus");
-  }
+	async toggle(): Promise<void> {
+		await this.sendCommand("toggle");
+	}
 
-  async volumeMinus(): Promise<void> {
-    await this.sendCommand("volume&volume=minus");
-  }
+	async next(): Promise<void> {
+		await this.sendCommand("next");
+	}
 
-  async mute(): Promise<void> {
-    await this.sendCommand("volume&volume=mute");
-  }
+	async previous(): Promise<void> {
+		await this.sendCommand("prev");
+	}
 
-  async unmute(): Promise<void> {
-    await this.sendCommand("volume&volume=unmute");
-  }
+	async seek(position: number): Promise<void> {
+		await this.sendCommand(`seek&position=${position}`);
+	}
 
-  async toggleMute(): Promise<void> {
-    await this.sendCommand("volume&volume=toggle");
-  }
+	// ==================== Volume Control ====================
 
-  // ==================== Queue Management ====================
+	async setVolume(volume: number): Promise<void> {
+		if (volume < 0 || volume > 100) {
+			throw new Error("Volume must be between 0 and 100");
+		}
+		await this.sendCommand(`volume&volume=${volume}`);
+	}
 
-  async clearQueue(): Promise<void> {
-    await this.sendCommand("clearQueue");
-  }
+	async volumePlus(): Promise<void> {
+		await this.sendCommand("volume&volume=plus");
+	}
 
-  // ==================== Playback Options ====================
+	async volumeMinus(): Promise<void> {
+		await this.sendCommand("volume&volume=minus");
+	}
 
-  async setRandom(enabled: boolean): Promise<void> {
-    await this.sendCommand(`random&value=${enabled ? "true" : "false"}`);
-  }
+	async mute(): Promise<void> {
+		await this.sendCommand("volume&volume=mute");
+	}
 
-  async setRepeat(enabled: boolean): Promise<void> {
-    await this.sendCommand(`repeat&value=${enabled ? "true" : "false"}`);
-  }
+	async unmute(): Promise<void> {
+		await this.sendCommand("volume&volume=unmute");
+	}
 
-  async setRepeatSingle(enabled: boolean): Promise<void> {
-    await this.sendCommand(`repeatSingle&value=${enabled ? "true" : "false"}`);
-  }
+	async toggleMute(): Promise<void> {
+		await this.sendCommand("volume&volume=toggle");
+	}
 
-  // ==================== Private Methods ====================
+	// ==================== Queue Management ====================
 
-  private async sendCommand(cmd: string): Promise<void> {
-    await this.axiosInstance.get(`/api/v1/commands/?cmd=${cmd}`);
-  }
+	async clearQueue(): Promise<void> {
+		await this.sendCommand("clearQueue");
+	}
 
-  private startPolling(): void {
-    if (this.pollTimer) {
-      return;
-    }
+	// ==================== Playback Options ====================
 
-    this.pollTimer = setInterval(async () => {
-      try {
-        const state = await this.getState();
-        this.checkStateChange(state);
-      } catch (_error) {
-        // Connection lost
-        if (this.connected) {
-          this.connected = false;
-          this.notifyConnectionChange(false);
-        }
-      }
-    }, this.config.pollInterval);
-  }
+	async setRandom(enabled: boolean): Promise<void> {
+		await this.sendCommand(`random&value=${enabled ? "true" : "false"}`);
+	}
 
-  private stopPolling(): void {
-    if (this.pollTimer) {
-      clearInterval(this.pollTimer);
-      this.pollTimer = undefined;
-    }
-  }
+	async setRepeat(enabled: boolean): Promise<void> {
+		await this.sendCommand(`repeat&value=${enabled ? "true" : "false"}`);
+	}
 
-  private checkStateChange(newState: VolumioState): void {
-    // Compare relevant state fields to detect changes
-    if (!this.lastState || this.hasStateChanged(this.lastState, newState)) {
-      this.lastState = newState;
-      this.notifyStateChange(newState);
-    }
-  }
+	async setRepeatSingle(enabled: boolean): Promise<void> {
+		await this.sendCommand(`repeatSingle&value=${enabled ? "true" : "false"}`);
+	}
 
-  private hasStateChanged(
-    oldState: VolumioState,
-    newState: VolumioState,
-  ): boolean {
-    // Check key fields that indicate a meaningful state change
-    return (
-      oldState.status !== newState.status ||
-      oldState.position !== newState.position ||
-      oldState.title !== newState.title ||
-      oldState.volume !== newState.volume ||
-      oldState.mute !== newState.mute ||
-      oldState.random !== newState.random ||
-      oldState.repeat !== newState.repeat
-    );
-  }
+	// ==================== Private Methods ====================
 
-  private notifyStateChange(state: VolumioState): void {
-    for (const callback of this.stateChangeCallbacks) {
-      try {
-        callback(state);
-      } catch (_error) {
-        // Ignore callback errors
-      }
-    }
-  }
+	private async sendCommand(cmd: string): Promise<void> {
+		this.logger.debug(`Sending command: ${cmd}`);
+		try {
+			await this.axiosInstance.get(`/api/v1/commands/?cmd=${cmd}`);
+			this.logger.debug(`Command ${cmd} sent successfully`);
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			this.logger.error(`Command ${cmd} failed: ${errorMessage}`);
+			throw error;
+		}
+	}
 
-  private notifyConnectionChange(connected: boolean): void {
-    for (const callback of this.connectionChangeCallbacks) {
-      try {
-        callback(connected);
-      } catch (_error) {
-        // Ignore callback errors
-      }
-    }
-  }
+	private startPolling(): void {
+		if (this.pollTimer) {
+			this.logger.warn("Polling already active");
+			return;
+		}
+
+		this.logger.debug("Starting polling timer");
+		this.pollTimer = setInterval(async () => {
+			try {
+				this.logger.silly("Polling state...");
+				const state = await this.getState();
+				this.checkStateChange(state);
+			} catch (error) {
+				const errorMessage = error instanceof Error ? error.message : String(error);
+				this.logger.warn(`Polling error: ${errorMessage}`);
+
+				// Connection lost
+				if (this.connected) {
+					this.logger.error("Connection lost during polling");
+					this.connected = false;
+					this.notifyConnectionChange(false);
+				}
+			}
+		}, this.config.pollInterval);
+	}
+
+	private stopPolling(): void {
+		if (this.pollTimer) {
+			this.logger.debug("Stopping polling timer");
+			clearInterval(this.pollTimer);
+			this.pollTimer = undefined;
+		}
+	}
+
+	private checkStateChange(newState: VolumioState): void {
+		// Compare relevant state fields to detect changes
+		if (!this.lastState || this.hasStateChanged(this.lastState, newState)) {
+			this.logger.debug("State change detected");
+			this.logger.silly(`Old state: ${JSON.stringify(this.lastState)}, New state: ${JSON.stringify(newState)}`);
+			this.lastState = newState;
+			this.notifyStateChange(newState);
+		}
+	}
+
+	private hasStateChanged(oldState: VolumioState, newState: VolumioState): boolean {
+		// Check key fields that indicate a meaningful state change
+		return (
+			oldState.status !== newState.status ||
+			oldState.position !== newState.position ||
+			oldState.title !== newState.title ||
+			oldState.volume !== newState.volume ||
+			oldState.mute !== newState.mute ||
+			oldState.random !== newState.random ||
+			oldState.repeat !== newState.repeat
+		);
+	}
+
+	private notifyStateChange(state: VolumioState): void {
+		this.logger.debug("Notifying state change callbacks");
+		for (const callback of this.stateChangeCallbacks) {
+			try {
+				callback(state);
+			} catch (error) {
+				const errorMessage = error instanceof Error ? error.message : String(error);
+				this.logger.error(`State change callback error: ${errorMessage}`);
+			}
+		}
+	}
+
+	private notifyConnectionChange(connected: boolean): void {
+		this.logger.debug(`Notifying connection change: ${connected}`);
+		for (const callback of this.connectionChangeCallbacks) {
+			try {
+				callback(connected);
+			} catch (error) {
+				const errorMessage = error instanceof Error ? error.message : String(error);
+				this.logger.error(`Connection change callback error: ${errorMessage}`);
+			}
+		}
+	}
 }

@@ -32,49 +32,76 @@ __export(restVolumioClient_exports, {
 });
 module.exports = __toCommonJS(restVolumioClient_exports);
 var import_axios = __toESM(require("axios"));
+var import_logger = require("./logger");
 class RestVolumioClient {
   config;
   axiosInstance;
   connected = false;
+  logger;
   pollTimer;
   lastState;
   stateChangeCallbacks = [];
   connectionChangeCallbacks = [];
   constructor(config) {
+    var _a, _b;
     this.config = {
       ...config,
-      pollInterval: config.pollInterval || 2e3
+      pollInterval: (_a = config.pollInterval) != null ? _a : 2e3,
+      logger: (_b = config.logger) != null ? _b : new import_logger.NoOpLogger()
     };
+    this.logger = this.config.logger;
+    this.logger.debug(`REST client initialized: ${this.config.host}:${this.config.port} (poll: ${this.config.pollInterval}ms)`);
     this.axiosInstance = import_axios.default.create({
       baseURL: `http://${config.host}:${config.port}`,
       timeout: 5e3
     });
   }
   async connect() {
+    var _a, _b;
+    this.logger.info(`Connecting to Volumio via REST API: http://${this.config.host}:${this.config.port}`);
     try {
-      await this.getState();
+      this.logger.debug("Testing connection with getState() call...");
+      const state = await this.getState();
+      this.logger.silly(`Initial state: ${JSON.stringify(state)}`);
       this.connected = true;
       this.notifyConnectionChange(true);
+      this.logger.info("REST API connection successful");
+      this.logger.debug(`Starting state polling (interval: ${this.config.pollInterval}ms)`);
       this.startPolling();
     } catch (error) {
       this.connected = false;
       this.notifyConnectionChange(false);
-      throw new Error(`Failed to connect to Volumio: ${error}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorDetails = import_axios.default.isAxiosError(error) ? {
+        status: (_a = error.response) == null ? void 0 : _a.status,
+        statusText: (_b = error.response) == null ? void 0 : _b.statusText,
+        code: error.code
+      } : {};
+      this.logger.error(
+        `Failed to connect to Volumio at ${this.config.host}:${this.config.port}: ${errorMessage} ${JSON.stringify(errorDetails)}`
+      );
+      throw new Error(`Failed to connect to Volumio at ${this.config.host}:${this.config.port} - ${errorMessage}`);
     }
   }
   async disconnect() {
+    this.logger.info("Disconnecting REST client...");
     this.stopPolling();
     this.connected = false;
     this.notifyConnectionChange(false);
+    this.logger.debug("REST client disconnected");
   }
   isConnected() {
     return this.connected;
   }
   async ping() {
+    this.logger.debug("Pinging Volumio...");
     try {
       await this.axiosInstance.get("/api/v1/getState");
+      this.logger.debug("Ping successful");
       return true;
-    } catch {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Ping failed: ${errorMessage}`);
       return false;
     }
   }
@@ -85,14 +112,28 @@ class RestVolumioClient {
     this.connectionChangeCallbacks.push(callback);
   }
   async getState() {
-    const response = await this.axiosInstance.get("/api/v1/getState");
-    return response.data;
+    this.logger.debug("Fetching player state...");
+    try {
+      const response = await this.axiosInstance.get("/api/v1/getState");
+      this.logger.silly(`State response: ${JSON.stringify(response.data)}`);
+      return response.data;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`getState() failed: ${errorMessage}`);
+      throw error;
+    }
   }
   async getSystemInfo() {
-    const response = await this.axiosInstance.get(
-      "/api/v1/getSystemInfo"
-    );
-    return response.data;
+    this.logger.debug("Fetching system info...");
+    try {
+      const response = await this.axiosInstance.get("/api/v1/getSystemInfo");
+      this.logger.silly(`System info response: ${JSON.stringify(response.data)}`);
+      return response.data;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`getSystemInfo() failed: ${errorMessage}`);
+      throw error;
+    }
   }
   // ==================== Playback Control ====================
   async play(n) {
@@ -155,18 +196,32 @@ class RestVolumioClient {
   }
   // ==================== Private Methods ====================
   async sendCommand(cmd) {
-    await this.axiosInstance.get(`/api/v1/commands/?cmd=${cmd}`);
+    this.logger.debug(`Sending command: ${cmd}`);
+    try {
+      await this.axiosInstance.get(`/api/v1/commands/?cmd=${cmd}`);
+      this.logger.debug(`Command ${cmd} sent successfully`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Command ${cmd} failed: ${errorMessage}`);
+      throw error;
+    }
   }
   startPolling() {
     if (this.pollTimer) {
+      this.logger.warn("Polling already active");
       return;
     }
+    this.logger.debug("Starting polling timer");
     this.pollTimer = setInterval(async () => {
       try {
+        this.logger.silly("Polling state...");
         const state = await this.getState();
         this.checkStateChange(state);
-      } catch (_error) {
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        this.logger.warn(`Polling error: ${errorMessage}`);
         if (this.connected) {
+          this.logger.error("Connection lost during polling");
           this.connected = false;
           this.notifyConnectionChange(false);
         }
@@ -175,12 +230,15 @@ class RestVolumioClient {
   }
   stopPolling() {
     if (this.pollTimer) {
+      this.logger.debug("Stopping polling timer");
       clearInterval(this.pollTimer);
       this.pollTimer = void 0;
     }
   }
   checkStateChange(newState) {
     if (!this.lastState || this.hasStateChanged(this.lastState, newState)) {
+      this.logger.debug("State change detected");
+      this.logger.silly(`Old state: ${JSON.stringify(this.lastState)}, New state: ${JSON.stringify(newState)}`);
       this.lastState = newState;
       this.notifyStateChange(newState);
     }
@@ -189,18 +247,24 @@ class RestVolumioClient {
     return oldState.status !== newState.status || oldState.position !== newState.position || oldState.title !== newState.title || oldState.volume !== newState.volume || oldState.mute !== newState.mute || oldState.random !== newState.random || oldState.repeat !== newState.repeat;
   }
   notifyStateChange(state) {
+    this.logger.debug("Notifying state change callbacks");
     for (const callback of this.stateChangeCallbacks) {
       try {
         callback(state);
-      } catch (_error) {
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        this.logger.error(`State change callback error: ${errorMessage}`);
       }
     }
   }
   notifyConnectionChange(connected) {
+    this.logger.debug(`Notifying connection change: ${connected}`);
     for (const callback of this.connectionChangeCallbacks) {
       try {
         callback(connected);
-      } catch (_error) {
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        this.logger.error(`Connection change callback error: ${errorMessage}`);
       }
     }
   }

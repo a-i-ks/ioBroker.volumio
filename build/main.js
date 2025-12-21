@@ -104,6 +104,9 @@ class Volumio extends utils.Adapter {
   async onReady() {
     const apiMode = this.config.apiMode || "websocket";
     const port = 3e3;
+    this.log.info(
+      `Initializing Volumio client in ${apiMode.toUpperCase()} mode (host: ${this.config.host || "volumio.local"}:${port})`
+    );
     this.volumioClient = import_volumioClientFactory.VolumioClientFactory.create({
       apiMode,
       host: this.config.host || "volumio.local",
@@ -111,8 +114,10 @@ class Volumio extends utils.Adapter {
       pollInterval: (this.config.pollInterval || 2) * 1e3,
       // Convert to ms
       reconnectAttempts: this.config.reconnectAttempts || 5,
-      reconnectDelay: (this.config.reconnectDelay || 2) * 1e3
+      reconnectDelay: (this.config.reconnectDelay || 2) * 1e3,
       // Convert to ms
+      logger: this.log
+      // Pass ioBroker logger to client
     });
     if (apiMode === "rest" && this.config.subscribeToStateChanges) {
       this.axiosInstance = import_axios.default.create({

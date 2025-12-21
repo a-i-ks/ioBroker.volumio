@@ -44,7 +44,9 @@ class VolumioClientFactory {
     const restConfig = {
       host: config.host,
       port: config.port,
-      pollInterval: config.pollInterval || 2e3
+      pollInterval: config.pollInterval || 2e3,
+      logger: config.logger
+      // Pass logger
     };
     return new import_restVolumioClient.RestVolumioClient(restConfig);
   }
@@ -58,7 +60,19 @@ class VolumioClientFactory {
       host: config.host,
       port: config.port,
       reconnectAttempts: config.reconnectAttempts || 5,
-      reconnectDelay: config.reconnectDelay || 2e3
+      reconnectDelay: config.reconnectDelay || 2e3,
+      socketPath: config.socketPath,
+      // Pass Socket.IO path
+      transports: config.transports,
+      // Pass transport methods
+      timeout: config.timeout,
+      // Pass connection timeout
+      forceNew: config.forceNew,
+      // Pass forceNew flag
+      validateConnection: config.validateConnection,
+      // Pass validation flag
+      logger: config.logger
+      // Pass logger
     };
     return new import_websocketVolumioClient.WebSocketVolumioClient(wsConfig);
   }
