@@ -540,10 +540,12 @@ class Volumio extends utils.Adapter {
       this.setStateAsync("playbackInfo.codec", state.codec, true);
     }
     if (state.seek !== void 0) {
-      this.setStateAsync("playbackInfo.seek", state.seek, true);
+      const seek = typeof state.seek === "string" ? parseInt(state.seek, 10) : state.seek;
+      this.setStateAsync("playbackInfo.seek", seek, true);
     }
     if (state.duration !== void 0) {
-      this.setStateAsync("playbackInfo.duration", state.duration, true);
+      const duration = typeof state.duration === "string" ? parseInt(state.duration, 10) : state.duration;
+      this.setStateAsync("playbackInfo.duration", duration, true);
     }
     if (state.samplerate !== void 0) {
       this.setStateAsync("playbackInfo.samplerate", state.samplerate, true);

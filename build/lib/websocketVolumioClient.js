@@ -262,7 +262,18 @@ class WebSocketVolumioClient {
         return;
       }
       this.logger.debug(`Sending command: ${command}${data ? ` with data: ${JSON.stringify(data)}` : ""}`);
-      if (command === "getState" || command === "getSystemInfo") {
+      if (command === "getState") {
+        this.socket.emit(command);
+        const timeout = setTimeout(() => {
+          this.logger.warn(`Command ${command} response timeout after 5s`);
+          reject(new Error(`Timeout waiting for ${command} response`));
+        }, 5e3);
+        this.socket.once("pushState", (response) => {
+          clearTimeout(timeout);
+          this.logger.silly(`Received ${command} response via pushState: ${JSON.stringify(response)}`);
+          resolve(response);
+        });
+      } else if (command === "getSystemInfo") {
         this.socket.emit(command);
         const timeout = setTimeout(() => {
           this.logger.warn(`Command ${command} response timeout after 5s`);

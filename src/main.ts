@@ -672,10 +672,12 @@ class Volumio extends utils.Adapter {
       this.setStateAsync("playbackInfo.codec", state.codec, true);
     }
     if (state.seek !== undefined) {
-      this.setStateAsync("playbackInfo.seek", state.seek, true);
+      const seek = typeof state.seek === "string" ? parseInt(state.seek, 10) : state.seek;
+      this.setStateAsync("playbackInfo.seek", seek, true);
     }
     if (state.duration !== undefined) {
-      this.setStateAsync("playbackInfo.duration", state.duration, true);
+      const duration = typeof state.duration === "string" ? parseInt(state.duration, 10) : state.duration;
+      this.setStateAsync("playbackInfo.duration", duration, true);
     }
     if (state.samplerate !== undefined) {
       this.setStateAsync("playbackInfo.samplerate", state.samplerate, true);

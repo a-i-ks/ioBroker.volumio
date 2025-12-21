@@ -312,7 +312,23 @@ export class WebSocketVolumioClient implements IVolumioClient {
 			this.logger.debug(`Sending command: ${command}${data ? ` with data: ${JSON.stringify(data)}` : ""}`);
 
 			// For commands that return data (like getState)
-			if (command === "getState" || command === "getSystemInfo") {
+			if (command === "getState") {
+				// Volumio responds to getState with a pushState event
+				this.socket.emit(command);
+
+				// Add timeout for response
+				const timeout = setTimeout(() => {
+					this.logger.warn(`Command ${command} response timeout after 5s`);
+					reject(new Error(`Timeout waiting for ${command} response`));
+				}, 5000);
+
+				this.socket.once("pushState", (response: T) => {
+					clearTimeout(timeout);
+					this.logger.silly(`Received ${command} response via pushState: ${JSON.stringify(response)}`);
+					resolve(response);
+				});
+			} else if (command === "getSystemInfo") {
+				// getSystemInfo returns data directly
 				this.socket.emit(command);
 
 				// Add timeout for response
