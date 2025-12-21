@@ -535,7 +535,8 @@ class Volumio extends utils.Adapter {
       this.setStateAsync("playbackInfo.bitdepth", state.bitdepth, true);
     }
     if (state.channels !== void 0) {
-      this.setStateAsync("playbackInfo.channels", state.channels, true);
+      const channels = typeof state.channels === "string" ? parseInt(state.channels, 10) : state.channels;
+      this.setStateAsync("playbackInfo.channels", channels, true);
     }
     if (state.random !== void 0) {
       this.setStateAsync("playbackInfo.random", state.random, true);
