@@ -1,7 +1,9 @@
 "use strict";
+var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __export = (target, all) => {
   for (var name in all)
@@ -15,13 +17,21 @@ var __copyProps = (to, from, except, desc) => {
   }
   return to;
 };
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 var websocketVolumioClient_exports = {};
 __export(websocketVolumioClient_exports, {
   WebSocketVolumioClient: () => WebSocketVolumioClient
 });
 module.exports = __toCommonJS(websocketVolumioClient_exports);
-var import_socket = require("socket.io-client");
+var import_socket = __toESM(require("socket.io-client"));
 var import_logger = require("./logger");
 class WebSocketVolumioClient {
   config;
@@ -58,7 +68,7 @@ class WebSocketVolumioClient {
       this.logger.debug(
         `Socket.IO config: reconnectAttempts=${this.config.reconnectAttempts}, reconnectDelay=${this.config.reconnectDelay}ms, timeout=${this.config.timeout}ms`
       );
-      this.socket = (0, import_socket.io)(url, {
+      this.socket = (0, import_socket.default)(url, {
         path: this.config.socketPath,
         transports: this.config.transports,
         reconnection: true,
@@ -69,8 +79,8 @@ class WebSocketVolumioClient {
       });
       let initialConnectionResolved = false;
       this.socket.on("connect", async () => {
-        var _a, _b;
-        const transportName = (_a = this.socket) == null ? void 0 : _a.io.engine.transport.name;
+        var _a, _b, _c, _d, _e;
+        const transportName = (_d = (_c = (_b = (_a = this.socket) == null ? void 0 : _a.io) == null ? void 0 : _b.engine) == null ? void 0 : _c.transport) == null ? void 0 : _d.name;
         this.logger.info(`WebSocket connected successfully (transport: ${transportName})`);
         this.connected = true;
         this.notifyConnectionChange(true);
@@ -85,7 +95,7 @@ class WebSocketVolumioClient {
             const errorMessage = error instanceof Error ? error.message : String(error);
             this.logger.error(`Connection validation failed: ${errorMessage}`);
             initialConnectionResolved = true;
-            (_b = this.socket) == null ? void 0 : _b.disconnect();
+            (_e = this.socket) == null ? void 0 : _e.disconnect();
             reject(new Error(`WebSocket connected but validation failed: ${errorMessage}`));
           }
         } else if (!initialConnectionResolved) {
@@ -99,7 +109,7 @@ class WebSocketVolumioClient {
         this.notifyConnectionChange(false);
       });
       this.socket.on("connect_error", (error) => {
-        var _a, _b, _c;
+        var _a, _b, _c, _d;
         const errorDetails = {
           message: error.message,
           type: error.name,
@@ -108,7 +118,7 @@ class WebSocketVolumioClient {
         };
         this.logger.error(`WebSocket connection error: ${JSON.stringify(errorDetails)}`);
         this.logger.debug(
-          `Connection attempt to ${url} failed. Transport: ${((_c = (_b = (_a = this.socket) == null ? void 0 : _a.io.engine) == null ? void 0 : _b.transport) == null ? void 0 : _c.name) || "unknown"}`
+          `Connection attempt to ${url} failed. Transport: ${((_d = (_c = (_b = (_a = this.socket) == null ? void 0 : _a.io) == null ? void 0 : _b.engine) == null ? void 0 : _c.transport) == null ? void 0 : _d.name) || "unknown"}`
         );
         if (!initialConnectionResolved) {
           initialConnectionResolved = true;

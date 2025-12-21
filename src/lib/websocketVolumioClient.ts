@@ -5,8 +5,7 @@
  * Real-time state updates are received via 'pushState' events.
  */
 
-import type { Socket } from "socket.io-client";
-import { io } from "socket.io-client";
+import io from "socket.io-client";
 import type {
 	IVolumioClient,
 	VolumioState,
@@ -32,7 +31,7 @@ export interface WebSocketClientConfig {
 
 export class WebSocketVolumioClient implements IVolumioClient {
 	private config: Required<WebSocketClientConfig>;
-	private socket?: Socket;
+	private socket?: SocketIOClient.Socket;
 	private connected: boolean = false;
 	private logger: Logger;
 	private stateChangeCallbacks: StateChangeCallback[] = [];
@@ -82,7 +81,7 @@ export class WebSocketVolumioClient implements IVolumioClient {
 
 			// Connection successful
 			this.socket.on("connect", async () => {
-				const transportName = this.socket?.io.engine.transport.name;
+				const transportName = (this.socket?.io as any)?.engine?.transport?.name;
 				this.logger.info(`WebSocket connected successfully (transport: ${transportName})`);
 				this.connected = true;
 				this.notifyConnectionChange(true);
@@ -109,14 +108,14 @@ export class WebSocketVolumioClient implements IVolumioClient {
 			});
 
 			// Disconnection
-			this.socket.on("disconnect", (reason) => {
+			this.socket.on("disconnect", (reason: string) => {
 				this.logger.warn(`WebSocket disconnected: ${reason}`);
 				this.connected = false;
 				this.notifyConnectionChange(false);
 			});
 
 			// Connection error (initial connection and reconnection attempts)
-			this.socket.on("connect_error", (error) => {
+			this.socket.on("connect_error", (error: Error) => {
 				const errorDetails = {
 					message: error.message,
 					type: error.name,
@@ -126,7 +125,7 @@ export class WebSocketVolumioClient implements IVolumioClient {
 
 				this.logger.error(`WebSocket connection error: ${JSON.stringify(errorDetails)}`);
 				this.logger.debug(
-					`Connection attempt to ${url} failed. Transport: ${this.socket?.io.engine?.transport?.name || "unknown"}`,
+					`Connection attempt to ${url} failed. Transport: ${(this.socket?.io as any)?.engine?.transport?.name || "unknown"}`,
 				);
 
 				if (!initialConnectionResolved) {
@@ -143,7 +142,7 @@ export class WebSocketVolumioClient implements IVolumioClient {
 			});
 
 			// Reconnection attempt
-			this.socket.io.on("reconnect_attempt", (attempt) => {
+			this.socket.io.on("reconnect_attempt", (attempt: number) => {
 				this.logger.debug(`WebSocket reconnection attempt ${attempt}/${this.config.reconnectAttempts}`);
 			});
 
@@ -155,7 +154,7 @@ export class WebSocketVolumioClient implements IVolumioClient {
 			});
 
 			// Reconnection successful
-			this.socket.io.on("reconnect", (attempt) => {
+			this.socket.io.on("reconnect", (attempt: number) => {
 				this.logger.info(`WebSocket reconnected successfully after ${attempt} attempt(s)`);
 			});
 
