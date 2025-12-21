@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../src/lib/logger.ts"],
+  "sourcesContent": ["/**\n * Logger interface for Volumio clients\n * Compatible with ioBroker adapter logger\n */\nexport interface Logger {\n\tsilly(message: string): void;\n\tdebug(message: string): void;\n\tinfo(message: string): void;\n\twarn(message: string): void;\n\terror(message: string): void;\n}\n\n/**\n * No-op logger for cases where logging is not needed\n * Used as default when no logger is provided\n */\nexport class NoOpLogger implements Logger {\n\tsilly(_message: string): void {\n\t\t// No-op\n\t}\n\n\tdebug(_message: string): void {\n\t\t// No-op\n\t}\n\n\tinfo(_message: string): void {\n\t\t// No-op\n\t}\n\n\twarn(_message: string): void {\n\t\t// No-op\n\t}\n\n\terror(_message: string): void {\n\t\t// No-op\n\t}\n}\n"],
+  "mappings": ";;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAgBO,MAAM,WAA6B;AAAA,EACzC,MAAM,UAAwB;AAAA,EAE9B;AAAA,EAEA,MAAM,UAAwB;AAAA,EAE9B;AAAA,EAEA,KAAK,UAAwB;AAAA,EAE7B;AAAA,EAEA,KAAK,UAAwB;AAAA,EAE7B;AAAA,EAEA,MAAM,UAAwB;AAAA,EAE9B;AACD;",
+  "names": []
+}
