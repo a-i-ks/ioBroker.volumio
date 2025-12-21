@@ -90,11 +90,11 @@ class Volumio extends utils.Adapter {
    *
    * @param connected
    */
-  private handleConnectionChange(connected: boolean): void {
+  private async handleConnectionChange(connected: boolean): Promise<void> {
     this.log.info(
       `Connection to Volumio ${connected ? "established" : "lost"}`,
     );
-    this.setState("info.connection", connected, true);
+    await this.setStateAsync("info.connection", connected, true);
   }
 
   /**
@@ -150,8 +150,20 @@ class Volumio extends utils.Adapter {
       this.handleConnectionChange.bind(this),
     );
 
-    // Reset the connection indicator during startup
-    this.setState("info.connection", false, true);
+    // Ensure connection state object exists and reset the connection indicator during startup
+    await this.setObjectNotExistsAsync("info.connection", {
+      type: "state",
+      common: {
+        role: "indicator.connected",
+        name: "Connection state to Volumio instance",
+        type: "boolean",
+        read: true,
+        write: false,
+        def: false,
+      },
+      native: {},
+    });
+    await this.setStateAsync("info.connection", false, true);
 
     // Subscribe to all state changes in the 'volumio' namespace
     this.subscribeStates("*");
