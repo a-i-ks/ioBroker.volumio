@@ -753,19 +753,37 @@ class Volumio extends utils.Adapter {
     }
   }
   async volumeUp() {
-    var _a;
+    let volumeSteps = this.config.volumeSteps;
+    if (!volumeSteps || volumeSteps > 100 || volumeSteps < 0) {
+      this.log.warn(
+        `Invalid volume step setting. volumeSteps will be set to 10`
+      );
+      volumeSteps = 10;
+    }
     try {
-      await ((_a = this.volumioClient) == null ? void 0 : _a.volumePlus());
-      this.log.debug("Volume increased");
+      const state = await this.getStateAsync("playbackInfo.volume");
+      const currentVolume = (state == null ? void 0 : state.val) || 0;
+      const newVolumeValue = currentVolume + volumeSteps > 100 ? 100 : currentVolume + volumeSteps;
+      this.log.debug(`Increasing volume from ${currentVolume} to ${newVolumeValue}`);
+      await this.volumeSetTo(newVolumeValue);
     } catch (error) {
       this.log.error(`Error increasing volume: ${error}`);
     }
   }
   async volumeDown() {
-    var _a;
+    let volumeSteps = this.config.volumeSteps;
+    if (!volumeSteps || volumeSteps > 100 || volumeSteps < 0) {
+      this.log.warn(
+        `Invalid volume step setting. volumeSteps will be set to 10`
+      );
+      volumeSteps = 10;
+    }
     try {
-      await ((_a = this.volumioClient) == null ? void 0 : _a.volumeMinus());
-      this.log.debug("Volume decreased");
+      const state = await this.getStateAsync("playbackInfo.volume");
+      const currentVolume = (state == null ? void 0 : state.val) || 0;
+      const newVolumeValue = currentVolume - volumeSteps < 0 ? 0 : currentVolume - volumeSteps;
+      this.log.debug(`Decreasing volume from ${currentVolume} to ${newVolumeValue}`);
+      await this.volumeSetTo(newVolumeValue);
     } catch (error) {
       this.log.error(`Error decreasing volume: ${error}`);
     }
