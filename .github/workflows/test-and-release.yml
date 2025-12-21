@@ -81,6 +81,7 @@ jobs:
          # Uncomment the following line if your adapter cannot be installed using 'npm ci'
          # install-command: 'npm install'
          build: true
+         # npm-token: ${{ secrets.NPM_TOKEN }}  # Commented out for migration to Trusted Publishing
          # NPM Trusted Publishing is now enabled via OIDC (id-token: write permission above)
          # npm-token is no longer needed
          github-token: ${{ secrets.GITHUB_TOKEN }}
