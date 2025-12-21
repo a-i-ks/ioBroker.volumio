@@ -212,7 +212,22 @@ export class WebSocketVolumioClient implements IVolumioClient {
 	}
 
 	async getSystemInfo(): Promise<VolumioSystemInfo> {
-		return this.sendCommand<VolumioSystemInfo>("getSystemInfo");
+		// Volumio doesn't reliably respond to getSystemInfo via WebSocket
+		// Fall back to REST API for this operation
+		this.logger.debug("Fetching system info via REST API fallback...");
+		try {
+			const axios = await import("axios");
+			const response = await axios.default.get<VolumioSystemInfo>(
+				`http://${this.config.host}:${this.config.port}/api/v1/getSystemInfo`,
+				{ timeout: 5000 }
+			);
+			this.logger.silly(`System info response: ${JSON.stringify(response.data)}`);
+			return response.data;
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			this.logger.error(`getSystemInfo() via REST fallback failed: ${errorMessage}`);
+			throw error;
+		}
 	}
 
 	// ==================== Playback Control ====================
@@ -325,21 +340,6 @@ export class WebSocketVolumioClient implements IVolumioClient {
 				this.socket.once("pushState", (response: T) => {
 					clearTimeout(timeout);
 					this.logger.silly(`Received ${command} response via pushState: ${JSON.stringify(response)}`);
-					resolve(response);
-				});
-			} else if (command === "getSystemInfo") {
-				// getSystemInfo returns data directly
-				this.socket.emit(command);
-
-				// Add timeout for response
-				const timeout = setTimeout(() => {
-					this.logger.warn(`Command ${command} response timeout after 5s`);
-					reject(new Error(`Timeout waiting for ${command} response`));
-				}, 5000);
-
-				this.socket.once(command, (response: T) => {
-					clearTimeout(timeout);
-					this.logger.silly(`Received ${command} response: ${JSON.stringify(response)}`);
 					resolve(response);
 				});
 			} else {
