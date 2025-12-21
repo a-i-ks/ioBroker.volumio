@@ -672,11 +672,15 @@ class Volumio extends utils.Adapter {
       this.setStateAsync("playbackInfo.codec", state.codec, true);
     }
     if (state.seek !== undefined) {
-      const seek = typeof state.seek === "string" ? parseInt(state.seek, 10) : state.seek;
+      const seek =
+        typeof state.seek === "string" ? parseInt(state.seek, 10) : state.seek;
       this.setStateAsync("playbackInfo.seek", seek, true);
     }
     if (state.duration !== undefined) {
-      const duration = typeof state.duration === "string" ? parseInt(state.duration, 10) : state.duration;
+      const duration =
+        typeof state.duration === "string"
+          ? parseInt(state.duration, 10)
+          : state.duration;
       this.setStateAsync("playbackInfo.duration", duration, true);
     }
     if (state.samplerate !== undefined) {
@@ -686,7 +690,10 @@ class Volumio extends utils.Adapter {
       this.setStateAsync("playbackInfo.bitdepth", state.bitdepth, true);
     }
     if (state.channels !== undefined) {
-      const channels = typeof state.channels === "string" ? parseInt(state.channels, 10) : state.channels;
+      const channels =
+        typeof state.channels === "string"
+          ? parseInt(state.channels, 10)
+          : state.channels;
       this.setStateAsync("playbackInfo.channels", channels, true);
     }
     if (state.random !== undefined) {
@@ -702,12 +709,18 @@ class Volumio extends utils.Adapter {
       this.setStateAsync("playbackInfo.consume", state.consume, true);
     }
     if (state.volume !== undefined) {
-      const volume = typeof state.volume === "string" ? parseInt(state.volume, 10) : state.volume;
+      const volume =
+        typeof state.volume === "string"
+          ? parseInt(state.volume, 10)
+          : state.volume;
       this.setStateAsync("playbackInfo.volume", volume, true);
       this.setStateAsync("player.volume", volume, true);
     }
     if (state.dbVolume !== undefined) {
-      const dbVolume = typeof state.dbVolume === "string" ? parseFloat(state.dbVolume) : state.dbVolume;
+      const dbVolume =
+        typeof state.dbVolume === "string"
+          ? parseFloat(state.dbVolume)
+          : state.dbVolume;
       this.setStateAsync("playbackInfo.dbVolume", dbVolume, true);
     }
     if (state.disableVolumeControl !== undefined) {
@@ -722,7 +735,10 @@ class Volumio extends utils.Adapter {
       this.setStateAsync("player.muted", state.mute, true);
     }
     if (state.stream !== undefined) {
-      const stream = typeof state.stream === "boolean" ? String(state.stream) : (state.stream || "");
+      const stream =
+        typeof state.stream === "boolean"
+          ? String(state.stream)
+          : state.stream || "";
       this.setStateAsync("playbackInfo.stream", stream, true);
     }
     if (state.updatedb !== undefined) {
@@ -904,7 +920,9 @@ class Volumio extends utils.Adapter {
       const newVolumeValue =
         currentVolume + volumeSteps > 100 ? 100 : currentVolume + volumeSteps;
 
-      this.log.debug(`Increasing volume from ${currentVolume} to ${newVolumeValue}`);
+      this.log.debug(
+        `Increasing volume from ${currentVolume} to ${newVolumeValue}`,
+      );
       await this.volumeSetTo(newVolumeValue);
     } catch (error) {
       this.log.error(`Error increasing volume: ${error}`);
@@ -926,7 +944,9 @@ class Volumio extends utils.Adapter {
       const newVolumeValue =
         currentVolume - volumeSteps < 0 ? 0 : currentVolume - volumeSteps;
 
-      this.log.debug(`Decreasing volume from ${currentVolume} to ${newVolumeValue}`);
+      this.log.debug(
+        `Decreasing volume from ${currentVolume} to ${newVolumeValue}`,
+      );
       await this.volumeSetTo(newVolumeValue);
     } catch (error) {
       this.log.error(`Error decreasing volume: ${error}`);

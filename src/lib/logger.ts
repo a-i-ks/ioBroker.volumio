@@ -3,11 +3,11 @@
  * Compatible with ioBroker adapter logger
  */
 export interface Logger {
-	silly(message: string): void;
-	debug(message: string): void;
-	info(message: string): void;
-	warn(message: string): void;
-	error(message: string): void;
+  silly(message: string): void;
+  debug(message: string): void;
+  info(message: string): void;
+  warn(message: string): void;
+  error(message: string): void;
 }
 
 /**
@@ -15,23 +15,23 @@ export interface Logger {
  * Used as default when no logger is provided
  */
 export class NoOpLogger implements Logger {
-	silly(_message: string): void {
-		// No-op
-	}
+  silly(_message: string): void {
+    // No-op
+  }
 
-	debug(_message: string): void {
-		// No-op
-	}
+  debug(_message: string): void {
+    // No-op
+  }
 
-	info(_message: string): void {
-		// No-op
-	}
+  info(_message: string): void {
+    // No-op
+  }
 
-	warn(_message: string): void {
-		// No-op
-	}
+  warn(_message: string): void {
+    // No-op
+  }
 
-	error(_message: string): void {
-		// No-op
-	}
+  error(_message: string): void {
+    // No-op
+  }
 }

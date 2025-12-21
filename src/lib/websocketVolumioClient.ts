@@ -7,386 +7,423 @@
 
 import io from "socket.io-client";
 import type {
-	IVolumioClient,
-	VolumioState,
-	VolumioSystemInfo,
-	StateChangeCallback,
-	ConnectionStateCallback,
+  IVolumioClient,
+  VolumioState,
+  VolumioSystemInfo,
+  StateChangeCallback,
+  ConnectionStateCallback,
 } from "./volumioClient";
 import type { Logger } from "./logger";
 import { NoOpLogger } from "./logger";
 
 export interface WebSocketClientConfig {
-	host: string;
-	port: number;
-	reconnectAttempts?: number; // Number of reconnection attempts (default: 5)
-	reconnectDelay?: number; // Delay between reconnection attempts in ms (default: 2000)
-	socketPath?: string; // Socket.IO path (default: "/socket.io")
-	transports?: ("websocket" | "polling")[]; // Transport methods (default: ["websocket", "polling"])
-	timeout?: number; // Connection timeout in ms (default: 10000)
-	forceNew?: boolean; // Force new connection (default: false)
-	validateConnection?: boolean; // Validate connection after connect (default: true)
-	logger?: Logger; // Logger instance (optional)
+  host: string;
+  port: number;
+  reconnectAttempts?: number; // Number of reconnection attempts (default: 5)
+  reconnectDelay?: number; // Delay between reconnection attempts in ms (default: 2000)
+  socketPath?: string; // Socket.IO path (default: "/socket.io")
+  transports?: ("websocket" | "polling")[]; // Transport methods (default: ["websocket", "polling"])
+  timeout?: number; // Connection timeout in ms (default: 10000)
+  forceNew?: boolean; // Force new connection (default: false)
+  validateConnection?: boolean; // Validate connection after connect (default: true)
+  logger?: Logger; // Logger instance (optional)
 }
 
 export class WebSocketVolumioClient implements IVolumioClient {
-	private config: Required<WebSocketClientConfig>;
-	private socket?: SocketIOClient.Socket;
-	private connected: boolean = false;
-	private logger: Logger;
-	private stateChangeCallbacks: StateChangeCallback[] = [];
-	private connectionChangeCallbacks: ConnectionStateCallback[] = [];
+  private config: Required<WebSocketClientConfig>;
+  private socket?: SocketIOClient.Socket;
+  private connected: boolean = false;
+  private logger: Logger;
+  private stateChangeCallbacks: StateChangeCallback[] = [];
+  private connectionChangeCallbacks: ConnectionStateCallback[] = [];
 
-	constructor(config: WebSocketClientConfig) {
-		this.config = {
-			...config,
-			reconnectAttempts: config.reconnectAttempts ?? 5,
-			reconnectDelay: config.reconnectDelay ?? 2000,
-			socketPath: config.socketPath ?? "/socket.io",
-			transports: config.transports ?? ["websocket", "polling"],
-			timeout: config.timeout ?? 10000,
-			forceNew: config.forceNew ?? false,
-			validateConnection: config.validateConnection !== false, // Default: true
-			logger: config.logger ?? new NoOpLogger(),
-		};
+  constructor(config: WebSocketClientConfig) {
+    this.config = {
+      ...config,
+      reconnectAttempts: config.reconnectAttempts ?? 5,
+      reconnectDelay: config.reconnectDelay ?? 2000,
+      socketPath: config.socketPath ?? "/socket.io",
+      transports: config.transports ?? ["websocket", "polling"],
+      timeout: config.timeout ?? 10000,
+      forceNew: config.forceNew ?? false,
+      validateConnection: config.validateConnection !== false, // Default: true
+      logger: config.logger ?? new NoOpLogger(),
+    };
 
-		this.logger = this.config.logger;
-		this.logger.debug(
-			`WebSocket client initialized: ${this.config.host}:${this.config.port} (path: ${this.config.socketPath})`,
-		);
-	}
+    this.logger = this.config.logger;
+    this.logger.debug(
+      `WebSocket client initialized: ${this.config.host}:${this.config.port} (path: ${this.config.socketPath})`,
+    );
+  }
 
-	async connect(): Promise<void> {
-		return new Promise((resolve, reject) => {
-			const url = `http://${this.config.host}:${this.config.port}`;
+  async connect(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const url = `http://${this.config.host}:${this.config.port}`;
 
-			this.logger.info(
-				`Connecting to Volumio via WebSocket: ${url} (path: ${this.config.socketPath}, transports: ${this.config.transports.join(", ")})`,
-			);
-			this.logger.debug(
-				`Socket.IO config: reconnectAttempts=${this.config.reconnectAttempts}, reconnectDelay=${this.config.reconnectDelay}ms, timeout=${this.config.timeout}ms`,
-			);
+      this.logger.info(
+        `Connecting to Volumio via WebSocket: ${url} (path: ${this.config.socketPath}, transports: ${this.config.transports.join(", ")})`,
+      );
+      this.logger.debug(
+        `Socket.IO config: reconnectAttempts=${this.config.reconnectAttempts}, reconnectDelay=${this.config.reconnectDelay}ms, timeout=${this.config.timeout}ms`,
+      );
 
-			this.socket = io(url, {
-				path: this.config.socketPath,
-				transports: this.config.transports,
-				reconnection: true,
-				reconnectionAttempts: this.config.reconnectAttempts,
-				reconnectionDelay: this.config.reconnectDelay,
-				timeout: this.config.timeout,
-				forceNew: this.config.forceNew,
-			});
+      this.socket = io(url, {
+        path: this.config.socketPath,
+        transports: this.config.transports,
+        reconnection: true,
+        reconnectionAttempts: this.config.reconnectAttempts,
+        reconnectionDelay: this.config.reconnectDelay,
+        timeout: this.config.timeout,
+        forceNew: this.config.forceNew,
+      });
 
-			let initialConnectionResolved = false;
+      let initialConnectionResolved = false;
 
-			// Connection successful
-			this.socket.on("connect", async () => {
-				const transportName = (this.socket?.io as any)?.engine?.transport?.name;
-				this.logger.info(`WebSocket connected successfully (transport: ${transportName})`);
-				this.connected = true;
-				this.notifyConnectionChange(true);
+      // Connection successful
+      this.socket.on("connect", async () => {
+        const transportName = (this.socket?.io as any)?.engine?.transport?.name;
+        this.logger.info(
+          `WebSocket connected successfully (transport: ${transportName})`,
+        );
+        this.connected = true;
+        this.notifyConnectionChange(true);
 
-				// Validate connection if enabled
-				if (this.config.validateConnection && !initialConnectionResolved) {
-					this.logger.debug("Validating connection with getState() call...");
-					try {
-						await this.getState();
-						this.logger.debug("Connection validation successful");
-						initialConnectionResolved = true;
-						resolve();
-					} catch (error) {
-						const errorMessage = error instanceof Error ? error.message : String(error);
-						this.logger.error(`Connection validation failed: ${errorMessage}`);
-						initialConnectionResolved = true;
-						this.socket?.disconnect();
-						reject(new Error(`WebSocket connected but validation failed: ${errorMessage}`));
-					}
-				} else if (!initialConnectionResolved) {
-					initialConnectionResolved = true;
-					resolve();
-				}
-			});
+        // Validate connection if enabled
+        if (this.config.validateConnection && !initialConnectionResolved) {
+          this.logger.debug("Validating connection with getState() call...");
+          try {
+            await this.getState();
+            this.logger.debug("Connection validation successful");
+            initialConnectionResolved = true;
+            resolve();
+          } catch (error) {
+            const errorMessage =
+              error instanceof Error ? error.message : String(error);
+            this.logger.error(`Connection validation failed: ${errorMessage}`);
+            initialConnectionResolved = true;
+            this.socket?.disconnect();
+            reject(
+              new Error(
+                `WebSocket connected but validation failed: ${errorMessage}`,
+              ),
+            );
+          }
+        } else if (!initialConnectionResolved) {
+          initialConnectionResolved = true;
+          resolve();
+        }
+      });
 
-			// Disconnection
-			this.socket.on("disconnect", (reason: string) => {
-				this.logger.warn(`WebSocket disconnected: ${reason}`);
-				this.connected = false;
-				this.notifyConnectionChange(false);
-			});
+      // Disconnection
+      this.socket.on("disconnect", (reason: string) => {
+        this.logger.warn(`WebSocket disconnected: ${reason}`);
+        this.connected = false;
+        this.notifyConnectionChange(false);
+      });
 
-			// Connection error (initial connection and reconnection attempts)
-			this.socket.on("connect_error", (error: Error) => {
-				const errorDetails = {
-					message: error.message,
-					type: error.name,
-					description: (error as any).description,
-					context: (error as any).context,
-				};
+      // Connection error (initial connection and reconnection attempts)
+      this.socket.on("connect_error", (error: Error) => {
+        const errorDetails = {
+          message: error.message,
+          type: error.name,
+          description: (error as any).description,
+          context: (error as any).context,
+        };
 
-				this.logger.error(`WebSocket connection error: ${JSON.stringify(errorDetails)}`);
-				this.logger.debug(
-					`Connection attempt to ${url} failed. Transport: ${(this.socket?.io as any)?.engine?.transport?.name || "unknown"}`,
-				);
+        this.logger.error(
+          `WebSocket connection error: ${JSON.stringify(errorDetails)}`,
+        );
+        this.logger.debug(
+          `Connection attempt to ${url} failed. Transport: ${(this.socket?.io as any)?.engine?.transport?.name || "unknown"}`,
+        );
 
-				if (!initialConnectionResolved) {
-					initialConnectionResolved = true;
-					reject(
-						new Error(
-							`Failed to connect to Volumio at ${this.config.host}:${this.config.port} - ${error.message}`,
-						),
-					);
-				} else {
-					// Log reconnection attempts
-					this.logger.warn(`Reconnection attempt failed: ${error.message} (will retry)`);
-				}
-			});
+        if (!initialConnectionResolved) {
+          initialConnectionResolved = true;
+          reject(
+            new Error(
+              `Failed to connect to Volumio at ${this.config.host}:${this.config.port} - ${error.message}`,
+            ),
+          );
+        } else {
+          // Log reconnection attempts
+          this.logger.warn(
+            `Reconnection attempt failed: ${error.message} (will retry)`,
+          );
+        }
+      });
 
-			// Reconnection attempt
-			this.socket.io.on("reconnect_attempt", (attempt: number) => {
-				this.logger.debug(`WebSocket reconnection attempt ${attempt}/${this.config.reconnectAttempts}`);
-			});
+      // Reconnection attempt
+      this.socket.io.on("reconnect_attempt", (attempt: number) => {
+        this.logger.debug(
+          `WebSocket reconnection attempt ${attempt}/${this.config.reconnectAttempts}`,
+        );
+      });
 
-			// Reconnection failed (all attempts exhausted)
-			this.socket.io.on("reconnect_failed", () => {
-				this.logger.error(
-					`WebSocket reconnection failed after ${this.config.reconnectAttempts} attempts`,
-				);
-			});
+      // Reconnection failed (all attempts exhausted)
+      this.socket.io.on("reconnect_failed", () => {
+        this.logger.error(
+          `WebSocket reconnection failed after ${this.config.reconnectAttempts} attempts`,
+        );
+      });
 
-			// Reconnection successful
-			this.socket.io.on("reconnect", (attempt: number) => {
-				this.logger.info(`WebSocket reconnected successfully after ${attempt} attempt(s)`);
-			});
+      // Reconnection successful
+      this.socket.io.on("reconnect", (attempt: number) => {
+        this.logger.info(
+          `WebSocket reconnected successfully after ${attempt} attempt(s)`,
+        );
+      });
 
-			// Listen for state updates
-			this.socket.on("pushState", (state: VolumioState) => {
-				this.logger.silly(`Received pushState event: ${JSON.stringify(state)}`);
-				this.notifyStateChange(state);
-			});
+      // Listen for state updates
+      this.socket.on("pushState", (state: VolumioState) => {
+        this.logger.silly(`Received pushState event: ${JSON.stringify(state)}`);
+        this.notifyStateChange(state);
+      });
 
-			// Connection timeout
-			setTimeout(() => {
-				if (!initialConnectionResolved) {
-					this.logger.error(`Connection timeout after ${this.config.timeout}ms`);
-					initialConnectionResolved = true;
-					this.socket?.disconnect();
-					reject(
-						new Error(
-							`Connection timeout: No response from Volumio at ${this.config.host}:${this.config.port} after ${this.config.timeout}ms`,
-						),
-					);
-				}
-			}, this.config.timeout + 1000); // Add 1s buffer
-		});
-	}
+      // Connection timeout
+      setTimeout(() => {
+        if (!initialConnectionResolved) {
+          this.logger.error(
+            `Connection timeout after ${this.config.timeout}ms`,
+          );
+          initialConnectionResolved = true;
+          this.socket?.disconnect();
+          reject(
+            new Error(
+              `Connection timeout: No response from Volumio at ${this.config.host}:${this.config.port} after ${this.config.timeout}ms`,
+            ),
+          );
+        }
+      }, this.config.timeout + 1000); // Add 1s buffer
+    });
+  }
 
-	async disconnect(): Promise<void> {
-		this.logger.info("Disconnecting WebSocket client...");
-		if (this.socket) {
-			this.socket.disconnect();
-			this.socket = undefined;
-			this.logger.debug("WebSocket disconnected");
-		}
-		this.connected = false;
-		this.notifyConnectionChange(false);
-	}
+  async disconnect(): Promise<void> {
+    this.logger.info("Disconnecting WebSocket client...");
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = undefined;
+      this.logger.debug("WebSocket disconnected");
+    }
+    this.connected = false;
+    this.notifyConnectionChange(false);
+  }
 
-	isConnected(): boolean {
-		return this.connected && this.socket?.connected === true;
-	}
+  isConnected(): boolean {
+    return this.connected && this.socket?.connected === true;
+  }
 
-	async ping(): Promise<boolean> {
-		return this.isConnected();
-	}
+  async ping(): Promise<boolean> {
+    return this.isConnected();
+  }
 
-	onStateChange(callback: StateChangeCallback): void {
-		this.stateChangeCallbacks.push(callback);
-	}
+  onStateChange(callback: StateChangeCallback): void {
+    this.stateChangeCallbacks.push(callback);
+  }
 
-	onConnectionChange(callback: ConnectionStateCallback): void {
-		this.connectionChangeCallbacks.push(callback);
-	}
+  onConnectionChange(callback: ConnectionStateCallback): void {
+    this.connectionChangeCallbacks.push(callback);
+  }
 
-	async getState(): Promise<VolumioState> {
-		return this.sendCommand<VolumioState>("getState");
-	}
+  async getState(): Promise<VolumioState> {
+    return this.sendCommand<VolumioState>("getState");
+  }
 
-	async getSystemInfo(): Promise<VolumioSystemInfo> {
-		// Volumio doesn't reliably respond to getSystemInfo via WebSocket
-		// Fall back to REST API for this operation
-		this.logger.debug("Fetching system info via REST API fallback...");
-		try {
-			const axios = await import("axios");
-			const response = await axios.default.get<VolumioSystemInfo>(
-				`http://${this.config.host}:${this.config.port}/api/v1/getSystemInfo`,
-				{ timeout: 5000 }
-			);
-			this.logger.silly(`System info response: ${JSON.stringify(response.data)}`);
-			return response.data;
-		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : String(error);
-			this.logger.error(`getSystemInfo() via REST fallback failed: ${errorMessage}`);
-			throw error;
-		}
-	}
+  async getSystemInfo(): Promise<VolumioSystemInfo> {
+    // Volumio doesn't reliably respond to getSystemInfo via WebSocket
+    // Fall back to REST API for this operation
+    this.logger.debug("Fetching system info via REST API fallback...");
+    try {
+      const axios = await import("axios");
+      const response = await axios.default.get<VolumioSystemInfo>(
+        `http://${this.config.host}:${this.config.port}/api/v1/getSystemInfo`,
+        { timeout: 5000 },
+      );
+      this.logger.silly(
+        `System info response: ${JSON.stringify(response.data)}`,
+      );
+      return response.data;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `getSystemInfo() via REST fallback failed: ${errorMessage}`,
+      );
+      throw error;
+    }
+  }
 
-	// ==================== Playback Control ====================
+  // ==================== Playback Control ====================
 
-	async play(n?: number): Promise<void> {
-		if (n !== undefined) {
-			await this.sendCommand("play", { value: n });
-		} else {
-			await this.sendCommand("play");
-		}
-	}
+  async play(n?: number): Promise<void> {
+    if (n !== undefined) {
+      await this.sendCommand("play", { value: n });
+    } else {
+      await this.sendCommand("play");
+    }
+  }
 
-	async pause(): Promise<void> {
-		await this.sendCommand("pause");
-	}
+  async pause(): Promise<void> {
+    await this.sendCommand("pause");
+  }
 
-	async stop(): Promise<void> {
-		await this.sendCommand("stop");
-	}
+  async stop(): Promise<void> {
+    await this.sendCommand("stop");
+  }
 
-	async toggle(): Promise<void> {
-		await this.sendCommand("toggle");
-	}
+  async toggle(): Promise<void> {
+    await this.sendCommand("toggle");
+  }
 
-	async next(): Promise<void> {
-		await this.sendCommand("next");
-	}
+  async next(): Promise<void> {
+    await this.sendCommand("next");
+  }
 
-	async previous(): Promise<void> {
-		await this.sendCommand("prev");
-	}
+  async previous(): Promise<void> {
+    await this.sendCommand("prev");
+  }
 
-	async seek(position: number): Promise<void> {
-		await this.sendCommand("seek", { position });
-	}
+  async seek(position: number): Promise<void> {
+    await this.sendCommand("seek", { position });
+  }
 
-	// ==================== Volume Control ====================
+  // ==================== Volume Control ====================
 
-	async setVolume(volume: number): Promise<void> {
-		if (volume < 0 || volume > 100) {
-			throw new Error("Volume must be between 0 and 100");
-		}
-		// Volumio WebSocket API: io.emit('volume', 90) - send number directly, not wrapped in object
-		await this.sendCommand("volume", volume);
-	}
+  async setVolume(volume: number): Promise<void> {
+    if (volume < 0 || volume > 100) {
+      throw new Error("Volume must be between 0 and 100");
+    }
+    // Volumio WebSocket API: io.emit('volume', 90) - send number directly, not wrapped in object
+    await this.sendCommand("volume", volume);
+  }
 
-	async volumePlus(): Promise<void> {
-		// Volumio WebSocket API: io.emit('volume', '+')
-		await this.sendCommand("volume", "+");
-	}
+  async volumePlus(): Promise<void> {
+    // Volumio WebSocket API: io.emit('volume', '+')
+    await this.sendCommand("volume", "+");
+  }
 
-	async volumeMinus(): Promise<void> {
-		// Volumio WebSocket API: io.emit('volume', '-')
-		await this.sendCommand("volume", "-");
-	}
+  async volumeMinus(): Promise<void> {
+    // Volumio WebSocket API: io.emit('volume', '-')
+    await this.sendCommand("volume", "-");
+  }
 
-	async mute(): Promise<void> {
-		// Volumio WebSocket API: io.emit('mute', '')
-		await this.sendCommand("mute", "");
-	}
+  async mute(): Promise<void> {
+    // Volumio WebSocket API: io.emit('mute', '')
+    await this.sendCommand("mute", "");
+  }
 
-	async unmute(): Promise<void> {
-		// Volumio WebSocket API: io.emit('unmute', '')
-		await this.sendCommand("unmute", "");
-	}
+  async unmute(): Promise<void> {
+    // Volumio WebSocket API: io.emit('unmute', '')
+    await this.sendCommand("unmute", "");
+  }
 
-	async toggleMute(): Promise<void> {
-		// Volumio doesn't have a native toggle, so we'll use mute command
-		// The client using this should implement toggle logic
-		await this.sendCommand("mute", "");
-	}
+  async toggleMute(): Promise<void> {
+    // Volumio doesn't have a native toggle, so we'll use mute command
+    // The client using this should implement toggle logic
+    await this.sendCommand("mute", "");
+  }
 
-	// ==================== Queue Management ====================
+  // ==================== Queue Management ====================
 
-	async clearQueue(): Promise<void> {
-		await this.sendCommand("clearQueue");
-	}
+  async clearQueue(): Promise<void> {
+    await this.sendCommand("clearQueue");
+  }
 
-	// ==================== Playback Options ====================
+  // ==================== Playback Options ====================
 
-	async setRandom(enabled: boolean): Promise<void> {
-		await this.sendCommand("random", { value: enabled });
-	}
+  async setRandom(enabled: boolean): Promise<void> {
+    await this.sendCommand("random", { value: enabled });
+  }
 
-	async setRepeat(enabled: boolean): Promise<void> {
-		await this.sendCommand("repeat", { value: enabled });
-	}
+  async setRepeat(enabled: boolean): Promise<void> {
+    await this.sendCommand("repeat", { value: enabled });
+  }
 
-	async setRepeatSingle(enabled: boolean): Promise<void> {
-		await this.sendCommand("repeatSingle", { value: enabled });
-	}
+  async setRepeatSingle(enabled: boolean): Promise<void> {
+    await this.sendCommand("repeatSingle", { value: enabled });
+  }
 
-	// ==================== Private Methods ====================
+  // ==================== Private Methods ====================
 
-	private async sendCommand<T = void>(command: string, data?: unknown): Promise<T> {
-		return new Promise((resolve, reject) => {
-			if (!this.socket || !this.connected) {
-				const error = "Not connected to Volumio";
-				this.logger.error(`sendCommand(${command}) failed: ${error}`);
-				reject(new Error(error));
-				return;
-			}
+  private async sendCommand<T = void>(
+    command: string,
+    data?: unknown,
+  ): Promise<T> {
+    return new Promise((resolve, reject) => {
+      if (!this.socket || !this.connected) {
+        const error = "Not connected to Volumio";
+        this.logger.error(`sendCommand(${command}) failed: ${error}`);
+        reject(new Error(error));
+        return;
+      }
 
-			// Format data for logging
-			const dataStr = data !== undefined
-				? (typeof data === 'object' ? JSON.stringify(data) : String(data))
-				: "";
-			this.logger.debug(`Sending command: ${command}${dataStr ? ` with data: ${dataStr}` : ""}`);
+      // Format data for logging
+      let dataStr = "";
+      if (data !== undefined) {
+        if (typeof data === "object" && data !== null) {
+          dataStr = JSON.stringify(data);
+        } else {
+          // eslint-disable-next-line @typescript-eslint/no-base-to-string
+          dataStr = String(data);
+        }
+      }
+      this.logger.debug(
+        `Sending command: ${command}${dataStr ? ` with data: ${dataStr}` : ""}`,
+      );
 
-			// For commands that return data (like getState)
-			if (command === "getState") {
-				// Volumio responds to getState with a pushState event
-				this.socket.emit(command);
+      // For commands that return data (like getState)
+      if (command === "getState") {
+        // Volumio responds to getState with a pushState event
+        this.socket.emit(command);
 
-				// Add timeout for response
-				const timeout = setTimeout(() => {
-					this.logger.warn(`Command ${command} response timeout after 5s`);
-					reject(new Error(`Timeout waiting for ${command} response`));
-				}, 5000);
+        // Add timeout for response
+        const timeout = setTimeout(() => {
+          this.logger.warn(`Command ${command} response timeout after 5s`);
+          reject(new Error(`Timeout waiting for ${command} response`));
+        }, 5000);
 
-				this.socket.once("pushState", (response: T) => {
-					clearTimeout(timeout);
-					this.logger.silly(`Received ${command} response via pushState: ${JSON.stringify(response)}`);
-					resolve(response);
-				});
-			} else {
-				// For commands that don't return data
-				if (data !== undefined) {
-					this.socket.emit(command, data);
-				} else {
-					this.socket.emit(command);
-				}
-				this.logger.debug(`Command ${command} sent successfully`);
-				resolve(undefined as T);
-			}
-		});
-	}
+        this.socket.once("pushState", (response: T) => {
+          clearTimeout(timeout);
+          this.logger.silly(
+            `Received ${command} response via pushState: ${JSON.stringify(response)}`,
+          );
+          resolve(response);
+        });
+      } else {
+        // For commands that don't return data
+        if (data !== undefined) {
+          this.socket.emit(command, data);
+        } else {
+          this.socket.emit(command);
+        }
+        this.logger.debug(`Command ${command} sent successfully`);
+        resolve(undefined as T);
+      }
+    });
+  }
 
-	private notifyStateChange(state: VolumioState): void {
-		this.logger.debug("Notifying state change callbacks");
-		for (const callback of this.stateChangeCallbacks) {
-			try {
-				callback(state);
-			} catch (error) {
-				const errorMessage = error instanceof Error ? error.message : String(error);
-				this.logger.error(`State change callback error: ${errorMessage}`);
-			}
-		}
-	}
+  private notifyStateChange(state: VolumioState): void {
+    this.logger.debug("Notifying state change callbacks");
+    for (const callback of this.stateChangeCallbacks) {
+      try {
+        callback(state);
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        this.logger.error(`State change callback error: ${errorMessage}`);
+      }
+    }
+  }
 
-	private notifyConnectionChange(connected: boolean): void {
-		this.logger.debug(`Notifying connection change: ${connected}`);
-		for (const callback of this.connectionChangeCallbacks) {
-			try {
-				callback(connected);
-			} catch (error) {
-				const errorMessage = error instanceof Error ? error.message : String(error);
-				this.logger.error(`Connection change callback error: ${errorMessage}`);
-			}
-		}
-	}
+  private notifyConnectionChange(connected: boolean): void {
+    this.logger.debug(`Notifying connection change: ${connected}`);
+    for (const callback of this.connectionChangeCallbacks) {
+      try {
+        callback(connected);
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        this.logger.error(`Connection change callback error: ${errorMessage}`);
+      }
+    }
+  }
 }
