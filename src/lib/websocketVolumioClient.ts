@@ -270,14 +270,33 @@ export class WebSocketVolumioClient implements IVolumioClient {
 		if (volume < 0 || volume > 100) {
 			throw new Error("Volume must be between 0 and 100");
 		}
-		await this.sendCommand("volume", { value: volume });
+		// Volumio doesn't reliably respond to volume commands via WebSocket
+		// Use REST API fallback for volume control
+		this.logger.debug(`Setting volume to ${volume} via REST API fallback...`);
+		try {
+			const axios = await import("axios");
+			const response = await axios.default.get(
+				`http://${this.config.host}:${this.config.port}/api/v1/commands/?cmd=volume&volume=${volume}`,
+				{ timeout: 5000 }
+			);
+			this.logger.silly(`Volume command response: ${JSON.stringify(response.data)}`);
+			if (!response.data?.response?.toLowerCase().includes("success")) {
+				throw new Error(`Volume command failed: ${JSON.stringify(response.data)}`);
+			}
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			this.logger.error(`setVolume() via REST fallback failed: ${errorMessage}`);
+			throw error;
+		}
 	}
 
 	async volumePlus(): Promise<void> {
+		// Not used in current implementation - volume up/down use setVolume with calculated values
 		await this.sendCommand("volume", { value: "plus" });
 	}
 
 	async volumeMinus(): Promise<void> {
+		// Not used in current implementation - volume up/down use setVolume with calculated values
 		await this.sendCommand("volume", { value: "minus" });
 	}
 

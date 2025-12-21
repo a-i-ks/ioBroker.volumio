@@ -231,10 +231,26 @@ class WebSocketVolumioClient {
   }
   // ==================== Volume Control ====================
   async setVolume(volume) {
+    var _a, _b;
     if (volume < 0 || volume > 100) {
       throw new Error("Volume must be between 0 and 100");
     }
-    await this.sendCommand("volume", { value: volume });
+    this.logger.debug(`Setting volume to ${volume} via REST API fallback...`);
+    try {
+      const axios = await Promise.resolve().then(() => __toESM(require("axios")));
+      const response = await axios.default.get(
+        `http://${this.config.host}:${this.config.port}/api/v1/commands/?cmd=volume&volume=${volume}`,
+        { timeout: 5e3 }
+      );
+      this.logger.silly(`Volume command response: ${JSON.stringify(response.data)}`);
+      if (!((_b = (_a = response.data) == null ? void 0 : _a.response) == null ? void 0 : _b.toLowerCase().includes("success"))) {
+        throw new Error(`Volume command failed: ${JSON.stringify(response.data)}`);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`setVolume() via REST fallback failed: ${errorMessage}`);
+      throw error;
+    }
   }
   async volumePlus() {
     await this.sendCommand("volume", { value: "plus" });
