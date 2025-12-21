@@ -91,7 +91,7 @@ This adapter uses the official Volumio APIs:
   ### **WORK IN PROGRESS**
 -->
 
-### 0.9.0 (2025-01-XX) - Dual API Support 🚀
+### **WORK IN PROGRESS**
 **Major Release - Milestone before 1.0.0**
 
 #### 🎉 New Features
