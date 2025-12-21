@@ -2,16 +2,16 @@
 
 // Augment the globally declared type ioBroker.AdapterConfig
 declare global {
-    namespace ioBroker {
-        interface AdapterConfig {
-            host: string;
-            subscribeToStateChanges: boolean;
-            subscriptionPort: number;
-            volumeSteps: number,
-            checkConnection: boolean,
-            checkConnectionInterval: number
-        }
+  namespace ioBroker {
+    interface AdapterConfig {
+      host: string;
+      subscribeToStateChanges: boolean;
+      subscriptionPort: number;
+      volumeSteps: number;
+      checkConnection: boolean;
+      checkConnectionInterval: number;
     }
+  }
 }
 
 // this is required so the above AdapterConfig is found by TypeScript / type checking
