@@ -4,6 +4,9 @@
         "license",
         "manual-review"
     ],
+    "changelog": {
+        "file": "README.md"
+    },
     "exec": {
         "before_commit": "npm run build"
     }
