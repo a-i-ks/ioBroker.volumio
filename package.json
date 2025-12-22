@@ -27,7 +27,7 @@
     "axios": "^1.7.2",
     "body-parser": "^2.2.1",
     "express": "^5.2.1",
-    "socket.io-client": "^4.8.1"
+    "socket.io-client": "^2.5.0"
   },
   "devDependencies": {
     "@alcalzone/release-script": "^5.0.0",
