@@ -20,7 +20,7 @@
     "url": "https://github.com/a-i-ks/ioBroker.volumio.git"
   },
   "engines": {
-    "node": ">= 18"
+    "node": ">= 20"
   },
   "dependencies": {
     "@iobroker/adapter-core": "^3.3.2",
