@@ -764,7 +764,9 @@ class Volumio extends utils.Adapter {
       const state = await this.getStateAsync("playbackInfo.volume");
       const currentVolume = (state == null ? void 0 : state.val) || 0;
       const newVolumeValue = currentVolume + volumeSteps > 100 ? 100 : currentVolume + volumeSteps;
-      this.log.debug(`Increasing volume from ${currentVolume} to ${newVolumeValue}`);
+      this.log.debug(
+        `Increasing volume from ${currentVolume} to ${newVolumeValue}`
+      );
       await this.volumeSetTo(newVolumeValue);
     } catch (error) {
       this.log.error(`Error increasing volume: ${error}`);
@@ -782,7 +784,9 @@ class Volumio extends utils.Adapter {
       const state = await this.getStateAsync("playbackInfo.volume");
       const currentVolume = (state == null ? void 0 : state.val) || 0;
       const newVolumeValue = currentVolume - volumeSteps < 0 ? 0 : currentVolume - volumeSteps;
-      this.log.debug(`Decreasing volume from ${currentVolume} to ${newVolumeValue}`);
+      this.log.debug(
+        `Decreasing volume from ${currentVolume} to ${newVolumeValue}`
+      );
       await this.volumeSetTo(newVolumeValue);
     } catch (error) {
       this.log.error(`Error decreasing volume: ${error}`);
