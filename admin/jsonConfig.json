@@ -12,9 +12,11 @@
             "label": "Volumino Host Address",
             "default": "volumio.local",
             "newLine": true,
+            "xs": 12,
             "sm": 12,
             "md": 6,
-            "lg": 4
+            "lg": 4,
+            "xl": 4
         },
         "apiMode": {
             "type": "select",
@@ -31,15 +33,21 @@
             ],
             "default": "websocket",
             "newLine": true,
+            "xs": 12,
             "sm": 12,
             "md": 6,
-            "lg": 4
+            "lg": 4,
+            "xl": 4
         },
         "apiModeDescription": {
             "type": "staticText",
             "text": "WebSocket mode provides real-time updates and is more efficient. REST mode uses polling to check for state changes.",
             "newLine": true,
-            "sm": 12
+            "xs": 12,
+            "sm": 12,
+            "md": 12,
+            "lg": 12,
+            "xl": 12
         },
         "pollInterval": {
             "type": "number",
@@ -50,9 +58,11 @@
             "hidden": "data.apiMode !== 'rest'",
             "help": "How often to check for state changes in REST mode",
             "newLine": true,
+            "xs": 12,
             "sm": 12,
             "md": 6,
-            "lg": 4
+            "lg": 4,
+            "xl": 4
         },
         "reconnectAttempts": {
             "type": "number",
@@ -63,9 +73,11 @@
             "hidden": "data.apiMode !== 'websocket'",
             "help": "Number of times to try reconnecting after connection loss",
             "newLine": true,
+            "xs": 12,
             "sm": 12,
             "md": 6,
-            "lg": 4
+            "lg": 4,
+            "xl": 4
         },
         "reconnectDelay": {
             "type": "number",
@@ -75,9 +87,11 @@
             "default": 2,
             "hidden": "data.apiMode !== 'websocket'",
             "help": "Wait time between reconnection attempts",
+            "xs": 12,
             "sm": 12,
             "md": 6,
-            "lg": 4
+            "lg": 4,
+            "xl": 4
         },
         "dividerApi": {
             "type": "divider",
@@ -89,9 +103,11 @@
             "label": "Check connection to Volumio",
             "default": true,
             "newLine": true,
+            "xs": 12,
             "sm": 12,
             "md": 6,
-            "lg": 4
+            "lg": 4,
+            "xl": 4
         },
         "checkConnectionInterval": {
             "type": "number",
@@ -99,9 +115,11 @@
             "default": 30,
             "disabled": "!data.checkConnection",
             "newLine": true,
+            "xs": 12,
             "sm": 12,
             "md": 6,
-            "lg": 4
+            "lg": 4,
+            "xl": 4
         },
         "divider1": {
             "type": "divider",
@@ -115,9 +133,11 @@
             "max": 100,
             "default": 5,
             "newLine": true,
+            "xs": 12,
             "sm": 12,
             "md": 6,
-            "lg": 4
+            "lg": 4,
+            "xl": 4
         },
         "divider2": {
             "type": "divider",
@@ -130,7 +150,11 @@
             "text": "DEPRECATED: HTTP Push notifications are only available in REST mode. For real-time updates, use WebSocket mode instead.\nVolumio can notify via POST calls when state changes. This requires REST mode to be enabled.",
             "newLine": true,
             "hidden": "data.apiMode !== 'rest'",
-            "sm": 12
+            "xs": 12,
+            "sm": 12,
+            "md": 12,
+            "lg": 12,
+            "xl": 12
         },
         "subscribeToStateChanges": {
             "type": "checkbox",
@@ -138,9 +162,11 @@
             "default": false,
             "hidden": "data.apiMode !== 'rest'",
             "newLine": true,
+            "xs": 12,
             "sm": 12,
             "md": 6,
-            "lg": 4
+            "lg": 4,
+            "xl": 4
         },
         "subscriptionPort": {
             "type": "number",
@@ -149,9 +175,11 @@
             "disabled": "!data.subscribeToStateChanges",
             "hidden": "data.apiMode !== 'rest'",
             "newLine": true,
+            "xs": 12,
             "sm": 12,
             "md": 6,
-            "lg": 4
+            "lg": 4,
+            "xl": 4
         }
     }
 }
