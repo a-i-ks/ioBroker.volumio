@@ -90,8 +90,7 @@ This adapter uses the official Volumio APIs:
   Placeholder for the next version (at the beginning of the line):
   ### **WORK IN PROGRESS**
 -->
-
-### **WORK IN PROGRESS**
+### 0.9.0 (2025-12-22)
 **Major Release - Milestone before 1.0.0**
 
 #### 🎉 New Features

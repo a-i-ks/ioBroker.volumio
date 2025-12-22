@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "volumio",
-    "version": "0.8.0",
+    "version": "0.9.0",
     "news": {
       "0.9.0": {
         "en": "(André Iske) Major release: Dual API support (WebSocket + REST), real-time updates, comprehensive refactoring, ESLint 9 migration, NPM Trusted Publishing, all dependencies updated",
