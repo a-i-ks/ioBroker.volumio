@@ -9,7 +9,7 @@ import type { AxiosInstance } from "axios";
 import axios from "axios";
 import bodyParser from "body-parser";
 import express from "express";
-import * as os from "os";
+import * as os from "node:os";
 import type { IVolumioClient, VolumioState } from "./lib/volumioClient";
 import { VolumioClientFactory } from "./lib/volumioClientFactory";
 import type { ApiMode } from "./lib/volumioClientFactory";
