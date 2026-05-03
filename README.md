@@ -156,6 +156,8 @@ This adapter uses the official Volumio APIs:
 ### 0.0.1
 * (André Iske) initial release
 
+[Older changelogs can be found there](CHANGELOG_OLD.md)
+
 ## License
 MIT License
 
