@@ -535,7 +535,7 @@
         "name": "Playback status",
         "type": "string",
         "read": true,
-        "write": false
+        "write": true
       },
       "native": {}
     },
@@ -800,7 +800,7 @@
         "name": "Muted status",
         "type": "boolean",
         "read": true,
-        "write": false
+        "write": true
       },
       "native": {}
     },

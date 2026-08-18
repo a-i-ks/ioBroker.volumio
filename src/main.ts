@@ -353,6 +353,14 @@ class Volumio extends utils.Adapter {
             case 'player.unmute':
                 this.volumeUnmute();
                 break;
+            case 'playbackInfo.mute':
+            case 'player.muted':
+                if (state.val) {
+                    this.volumeMute();
+                } else {
+                    this.volumeUnmute();
+                }
+                break;
             case 'player.next':
                 this.nextTrack();
                 break;
@@ -373,6 +381,17 @@ class Volumio extends utils.Adapter {
                 break;
             case 'player.toggle':
                 this.playbackToggle();
+                break;
+            case 'playbackInfo.status':
+                if (state.val === 'play') {
+                    this.playbackPlay();
+                } else if (state.val === 'pause') {
+                    this.playbackPause();
+                } else if (state.val === 'stop') {
+                    this.playbackStop();
+                } else {
+                    this.log.warn(`playbackInfo.status state change. Unsupported value "${state.val}" passed`);
+                }
                 break;
             case 'playbackInfo.volume':
             case 'player.volume':
