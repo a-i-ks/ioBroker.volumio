@@ -347,14 +347,34 @@ export class WebSocketVolumioClient implements IVolumioClient {
 
     // ==================== Playback Options ====================
 
+    /**
+     * 'setRandom' matches the officially documented command, see
+     * https://developers.volumio.com/api/websocket-api
+     *
+     * @param enabled Whether random/shuffle playback should be enabled
+     */
     async setRandom(enabled: boolean): Promise<void> {
         await this.sendCommand('setRandom', { value: enabled });
     }
 
+    /**
+     * 'setRepeat' matches the officially documented command, see
+     * https://developers.volumio.com/api/websocket-api
+     *
+     * @param enabled Whether repeat playback should be enabled
+     */
     async setRepeat(enabled: boolean): Promise<void> {
         await this.sendCommand('setRepeat', { value: enabled });
     }
 
+    /**
+     * 'setRepeatSingle' is NOT officially documented (the API docs only
+     * list 'repeatSingle' as a field in the state response, no dedicated
+     * command). Verified empirically against a real Volumio instance to
+     * work, following the same 'set' prefix convention as setRandom/setRepeat.
+     *
+     * @param enabled Whether repeat-single-track should be enabled
+     */
     async setRepeatSingle(enabled: boolean): Promise<void> {
         await this.sendCommand('setRepeatSingle', { value: enabled });
     }
