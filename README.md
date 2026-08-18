@@ -90,6 +90,14 @@ This adapter uses the official Volumio APIs:
   Placeholder for the next version (at the beginning of the line):
   ### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+#### 🔧 Improvements
+* Timers are now registered via the adapter (`this.setInterval`/`this.setTimeout`) instead of the global functions, so js-controller can track and clean them up automatically (unload, compact mode)
+* `@types/node` downgraded to `^22.20.1` to match the adapter's actual Node 22 minimum (avoids incorrect typings for newer Node APIs)
+* Migrated `admin/i18n` translation files from the long directory format (`{lang}/translations.json`) to the short format (`{lang}.json`)
+* CI: `adapter-tests` now runs after `check-and-lint` instead of in parallel
+* Dependabot: npm dependency checks now run on a randomized monthly schedule instead of all on the same day, and the open-PR limit was raised from 5 to 15
+
 ### 0.10.0 (2026-08-18)
 #### 🐛 Bug Fixes
 * **Critical**: fixed a crash (`RangeError: Maximum call stack size exceeded`) that took down the whole adapter whenever the WebSocket connection to Volumio failed or was lost (e.g. Volumio restarting, a network hiccup). Cause: the bundled `engine.io-client` v3 (required by `socket.io-client` v2 for Volumio's Socket.IO v2 server) unconditionally prefers Node's native `WebSocket` global over the `ws` package if present, but predates it and cannot handle its error/close events correctly under modern Node.js (>= 21). Fixed by making socket.io-client's module load lazily while briefly hiding the native global, forcing the working `ws` transport. Verified by killing a live Volumio instance mid-connection: the adapter now reconnects/retries cleanly instead of crashing.
