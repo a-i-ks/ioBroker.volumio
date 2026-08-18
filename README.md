@@ -90,7 +90,7 @@ This adapter uses the official Volumio APIs:
   Placeholder for the next version (at the beginning of the line):
   ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.10.0 (2026-08-18)
 #### 🐛 Bug Fixes
 * Fixed WebSocket client sending wrong Volumio command names for playback options (`random`/`repeat`/`repeatSingle` instead of `setRandom`/`setRepeat`/`setRepeatSingle`), which silently made shuffle/repeat toggles a no-op in WebSocket mode. Found via a new live test against a real Volumio instance.
 * Removed `process.exit()` from `test-client.js` (incompatible with ioBroker compact mode)
@@ -165,16 +165,6 @@ This adapter uses the official Volumio APIs:
 
 ### 0.1.2
 * (André Iske) Minor bug fixes
-
-### 0.1.0
-* (André Iske) Complete reworked adapter
-    * Switched codebase to typescript
-    * Changed License to MIT
-
-### 0.0.1
-* (André Iske) initial release
-
-[Older changelogs can be found there](CHANGELOG_OLD.md)
 
 ## License
 MIT License
