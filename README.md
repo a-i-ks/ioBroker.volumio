@@ -168,6 +168,8 @@ This adapter uses the official Volumio APIs:
 ### 0.1.2
 * (André Iske) Minor bug fixes
 
+Older changes can be found in [CHANGELOG_OLD.md](CHANGELOG_OLD.md).
+
 ## License
 MIT License
 

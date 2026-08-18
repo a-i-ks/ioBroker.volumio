@@ -1,0 +1,18 @@
+{
+    "API Mode": "Modo de API",
+    "Check connection to Volumio": "Verifique a conexão com o Volumio",
+    "How often to check for state changes in REST mode": "Com que frequência verificar mudanças de estado no modo REST",
+    "Interval in s": "Intervalo em s",
+    "Number of times to try reconnecting after connection loss": "Número de tentativas de reconexão após perda de conexão",
+    "Poll interval (seconds)": "Intervalo de verificação (segundos)",
+    "Reconnection attempts": "Tentativas de reconexão",
+    "Reconnection delay (seconds)": "Atraso de reconexão (segundos)",
+    "Subscribe to player state changes (deprecated)": "Assinar mudanças de estado do reprodutor (obsoleto)",
+    "Subscription port": "Porta de assinatura",
+    "The adapter can be used in a event driven fashion. Volumio can notify via POST calls when state changes.\nThis is a much more efficient and elegant way to retrieve informations, instead of continuously polling the relevant information.": "O adaptador pode ser usado de maneira orientada a eventos. Volumio pode notificar via chamadas POST quando o estado muda.\nEsta é uma forma muito mais eficiente e elegante de recuperar informações, em vez de pesquisar continuamente as informações relevantes.",
+    "Volume steps": "Etapas de volume",
+    "Volumino Host Address": "Endereço do host Volumio",
+    "Volumio Adapter Configuration": "Configuração do adaptador Volumio",
+    "Wait time between reconnection attempts": "Tempo de espera entre tentativas de reconexão",
+    "volumio adapter settings": "Configurações do adaptador para volumio"
+}

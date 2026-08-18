@@ -8,10 +8,10 @@ updates:
   - package-ecosystem: 'npm'
     directory: '/'
     schedule:
-      interval: 'monthly'
-      time: '00:05'
+      interval: 'cron'
       timezone: 'Europe/Berlin'
-    open-pull-requests-limit: 5
+      cronjob: '17 3 8 * *'
+    open-pull-requests-limit: 15
     assignees:
       - 'a-i-ks'
     versioning-strategy: 'increase'
@@ -26,10 +26,10 @@ updates:
   - package-ecosystem: 'npm'
     directory: '/'
     schedule:
-      interval: 'monthly'
-      time: '00:05'
+      interval: 'cron'
       timezone: 'Europe/Berlin'
-    open-pull-requests-limit: 5
+      cronjob: '43 2 21 * *'
+    open-pull-requests-limit: 15
     assignees:
       - 'a-i-ks'
     versioning-strategy: 'increase'
