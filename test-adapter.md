@@ -5,6 +5,23 @@
 - Volumio-Installation (erreichbar im Netzwerk)
 - Adapter gebaut (`npm run build`)
 
+## Automatisierter Live-Test
+
+Statt (oder zusätzlich zu) den manuellen Szenarien unten gibt es einen automatisierten
+Mocha-Test, der REST- und WebSocket-Client gegen eine echte, erreichbare Volumio-Instanz
+laufen lässt (Connect, Ping, System-Info, State-Shape, ein reversibler
+Random-Playback-Toggle, sauberer Disconnect):
+
+```bash
+npm run test:live
+# oder mit abweichendem Host:
+VOLUMIO_HOST=volumio.local npm run test:live
+```
+
+Der Test überspringt sich selbst, wenn unter `VOLUMIO_HOST:VOLUMIO_PORT`
+(Default `localhost:3000`) keine Volumio-Instanz erreichbar ist. Läuft nicht als Teil
+von `npm test`/CI, da dort kein echtes Volumio-Gerät zur Verfügung steht.
+
 ## Test-Szenarien
 
 ### 1. WebSocket-Modus Test
