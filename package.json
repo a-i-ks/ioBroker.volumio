@@ -70,6 +70,7 @@
     "test:ts": "mocha --config test/mocharc.custom.json src/**/*.test.ts",
     "test:package": "mocha test/package --exit",
     "test:integration": "mocha test/integration --exit",
+    "test:live": "mocha --config test/mocharc.custom.json test/live.volumio.test.ts --exit",
     "test": "npm run test:ts && npm run test:package",
     "check": "tsc --noEmit",
     "lint": "eslint --ext .ts src/",
