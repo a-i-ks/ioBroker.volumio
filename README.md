@@ -95,6 +95,7 @@ This adapter uses the official Volumio APIs:
 * Fixed WebSocket client sending wrong Volumio command names for playback options (`random`/`repeat`/`repeatSingle` instead of `setRandom`/`setRepeat`/`setRepeatSingle`), which silently made shuffle/repeat toggles a no-op in WebSocket mode. Found via a new live test against a real Volumio instance.
 * Removed `process.exit()` from `test-client.js` (incompatible with ioBroker compact mode)
 * Corrected `read`/`write` role flags in `io-package.json` for `queue.repeatTrack`, `playbackInfo.random`, `queue.shuffle`
+* `playbackInfo.mute`/`player.muted` (role `media.mute`) and `playbackInfo.status` (role `media.state`) were declared writable but had no handler, so writes were silently ignored; both now actually control playback/mute, matching the official ioBroker `media.*` role spec
 
 #### 🔧 Improvements
 * Dependencies updated (axios, body-parser, rimraf, @types/node, @typescript-eslint/*, @alcalzone/release-script and plugins, @iobroker/adapter-core)
