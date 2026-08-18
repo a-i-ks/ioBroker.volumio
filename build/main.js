@@ -25,7 +25,7 @@ var utils = __toESM(require("@iobroker/adapter-core"));
 var import_axios = __toESM(require("axios"));
 var import_body_parser = __toESM(require("body-parser"));
 var import_express = __toESM(require("express"));
-var os = __toESM(require("os"));
+var os = __toESM(require("node:os"));
 var import_volumioClientFactory = require("./lib/volumioClientFactory");
 class Volumio extends utils.Adapter {
   volumioClient = null;
