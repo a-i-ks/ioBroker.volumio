@@ -32,6 +32,7 @@ __export(websocketVolumioClient_exports, {
 });
 module.exports = __toCommonJS(websocketVolumioClient_exports);
 var import_logger = require("./logger");
+var import_timers = require("./timers");
 let socketIOModule;
 function loadSocketIO() {
   if (!socketIOModule) {
@@ -58,7 +59,7 @@ class WebSocketVolumioClient {
   stateChangeCallbacks = [];
   connectionChangeCallbacks = [];
   constructor(config) {
-    var _a, _b, _c, _d, _e, _f, _g;
+    var _a, _b, _c, _d, _e, _f, _g, _h;
     this.config = {
       ...config,
       reconnectAttempts: (_a = config.reconnectAttempts) != null ? _a : 5,
@@ -69,7 +70,8 @@ class WebSocketVolumioClient {
       forceNew: (_f = config.forceNew) != null ? _f : false,
       validateConnection: config.validateConnection !== false,
       // Default: true
-      logger: (_g = config.logger) != null ? _g : new import_logger.NoOpLogger()
+      logger: (_g = config.logger) != null ? _g : new import_logger.NoOpLogger(),
+      timers: (_h = config.timers) != null ? _h : import_timers.globalTimers
     };
     this.logger = this.config.logger;
     this.logger.debug(
@@ -161,7 +163,7 @@ class WebSocketVolumioClient {
         this.logger.silly(`Received pushState event: ${JSON.stringify(state)}`);
         this.notifyStateChange(state);
       });
-      setTimeout(() => {
+      this.config.timers.setTimeout(() => {
         var _a;
         if (!initialConnectionResolved) {
           this.logger.error(`Connection timeout after ${this.config.timeout}ms`);
@@ -300,12 +302,12 @@ class WebSocketVolumioClient {
       this.logger.debug(`Sending command: ${command}${dataStr ? ` with data: ${dataStr}` : ""}`);
       if (command === "getState") {
         this.socket.emit(command);
-        const timeout = setTimeout(() => {
+        const timeout = this.config.timers.setTimeout(() => {
           this.logger.warn(`Command ${command} response timeout after 5s`);
           reject(new Error(`Timeout waiting for ${command} response`));
         }, 5e3);
         this.socket.once("pushState", (response) => {
-          clearTimeout(timeout);
+          this.config.timers.clearTimeout(timeout);
           this.logger.silly(`Received ${command} response via pushState: ${JSON.stringify(response)}`);
           resolve(response);
         });

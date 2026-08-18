@@ -33,6 +33,7 @@ __export(restVolumioClient_exports, {
 module.exports = __toCommonJS(restVolumioClient_exports);
 var import_axios = __toESM(require("axios"));
 var import_logger = require("./logger");
+var import_timers = require("./timers");
 class RestVolumioClient {
   config;
   axiosInstance;
@@ -43,11 +44,12 @@ class RestVolumioClient {
   stateChangeCallbacks = [];
   connectionChangeCallbacks = [];
   constructor(config) {
-    var _a, _b;
+    var _a, _b, _c;
     this.config = {
       ...config,
       pollInterval: (_a = config.pollInterval) != null ? _a : 2e3,
-      logger: (_b = config.logger) != null ? _b : new import_logger.NoOpLogger()
+      logger: (_b = config.logger) != null ? _b : new import_logger.NoOpLogger(),
+      timers: (_c = config.timers) != null ? _c : import_timers.globalTimers
     };
     this.logger = this.config.logger;
     this.logger.debug(
@@ -216,7 +218,7 @@ class RestVolumioClient {
       return;
     }
     this.logger.debug("Starting polling timer");
-    this.pollTimer = setInterval(async () => {
+    this.pollTimer = this.config.timers.setInterval(async () => {
       try {
         this.logger.silly("Polling state...");
         const state = await this.getState();
@@ -235,7 +237,7 @@ class RestVolumioClient {
   stopPolling() {
     if (this.pollTimer) {
       this.logger.debug("Stopping polling timer");
-      clearInterval(this.pollTimer);
+      this.config.timers.clearInterval(this.pollTimer);
       this.pollTimer = void 0;
     }
   }

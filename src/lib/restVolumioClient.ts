@@ -16,12 +16,15 @@ import type {
 } from './volumioClient';
 import type { Logger } from './logger';
 import { NoOpLogger } from './logger';
+import type { TimerApi } from './timers';
+import { globalTimers } from './timers';
 
 export interface RestClientConfig {
     host: string;
     port: number;
     pollInterval?: number; // Polling interval in ms (default: 2000)
     logger?: Logger; // Logger instance (optional)
+    timers?: TimerApi; // Timer implementation, e.g. the owning ioBroker adapter (default: global setInterval/clearInterval)
 }
 
 export class RestVolumioClient implements IVolumioClient {
@@ -29,7 +32,7 @@ export class RestVolumioClient implements IVolumioClient {
     private axiosInstance: AxiosInstance;
     private connected: boolean = false;
     private logger: Logger;
-    private pollTimer?: NodeJS.Timeout;
+    private pollTimer?: unknown;
     private lastState?: VolumioState;
     private stateChangeCallbacks: StateChangeCallback[] = [];
     private connectionChangeCallbacks: ConnectionStateCallback[] = [];
@@ -39,6 +42,7 @@ export class RestVolumioClient implements IVolumioClient {
             ...config,
             pollInterval: config.pollInterval ?? 2000,
             logger: config.logger ?? new NoOpLogger(),
+            timers: config.timers ?? globalTimers,
         };
 
         this.logger = this.config.logger;
@@ -251,7 +255,7 @@ export class RestVolumioClient implements IVolumioClient {
         }
 
         this.logger.debug('Starting polling timer');
-        this.pollTimer = setInterval(async () => {
+        this.pollTimer = this.config.timers.setInterval(async () => {
             try {
                 this.logger.silly('Polling state...');
                 const state = await this.getState();
@@ -273,7 +277,7 @@ export class RestVolumioClient implements IVolumioClient {
     private stopPolling(): void {
         if (this.pollTimer) {
             this.logger.debug('Stopping polling timer');
-            clearInterval(this.pollTimer);
+            this.config.timers.clearInterval(this.pollTimer);
             this.pollTimer = undefined;
         }
     }

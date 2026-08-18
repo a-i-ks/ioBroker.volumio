@@ -45,8 +45,10 @@ class VolumioClientFactory {
       host: config.host,
       port: config.port,
       pollInterval: config.pollInterval || 2e3,
-      logger: config.logger
+      logger: config.logger,
       // Pass logger
+      timers: config.timers
+      // Pass timer implementation
     };
     return new import_restVolumioClient.RestVolumioClient(restConfig);
   }
@@ -71,8 +73,10 @@ class VolumioClientFactory {
       // Pass forceNew flag
       validateConnection: config.validateConnection,
       // Pass validation flag
-      logger: config.logger
+      logger: config.logger,
       // Pass logger
+      timers: config.timers
+      // Pass timer implementation
     };
     return new import_websocketVolumioClient.WebSocketVolumioClient(wsConfig);
   }

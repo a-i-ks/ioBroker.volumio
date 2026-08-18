@@ -15,6 +15,8 @@ import type {
 } from './volumioClient';
 import type { Logger } from './logger';
 import { NoOpLogger } from './logger';
+import type { TimerApi } from './timers';
+import { globalTimers } from './timers';
 
 /**
  * Lazily loads socket.io-client, working around a crash-causing
@@ -64,6 +66,7 @@ export interface WebSocketClientConfig {
     forceNew?: boolean; // Force new connection (default: false)
     validateConnection?: boolean; // Validate connection after connect (default: true)
     logger?: Logger; // Logger instance (optional)
+    timers?: TimerApi; // Timer implementation, e.g. the owning ioBroker adapter (default: global setTimeout/clearTimeout)
 }
 
 export class WebSocketVolumioClient implements IVolumioClient {
@@ -85,6 +88,7 @@ export class WebSocketVolumioClient implements IVolumioClient {
             forceNew: config.forceNew ?? false,
             validateConnection: config.validateConnection !== false, // Default: true
             logger: config.logger ?? new NoOpLogger(),
+            timers: config.timers ?? globalTimers,
         };
 
         this.logger = this.config.logger;
@@ -200,7 +204,7 @@ export class WebSocketVolumioClient implements IVolumioClient {
             });
 
             // Connection timeout
-            setTimeout(() => {
+            this.config.timers.setTimeout(() => {
                 if (!initialConnectionResolved) {
                     this.logger.error(`Connection timeout after ${this.config.timeout}ms`);
                     initialConnectionResolved = true;
@@ -384,13 +388,13 @@ export class WebSocketVolumioClient implements IVolumioClient {
                 this.socket.emit(command);
 
                 // Add timeout for response
-                const timeout = setTimeout(() => {
+                const timeout = this.config.timers.setTimeout(() => {
                     this.logger.warn(`Command ${command} response timeout after 5s`);
                     reject(new Error(`Timeout waiting for ${command} response`));
                 }, 5000);
 
                 this.socket.once('pushState', (response: T) => {
-                    clearTimeout(timeout);
+                    this.config.timers.clearTimeout(timeout);
                     this.logger.silly(`Received ${command} response via pushState: ${JSON.stringify(response)}`);
                     resolve(response);
                 });

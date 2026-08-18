@@ -114,8 +114,10 @@ class Volumio extends utils.Adapter {
       reconnectAttempts: this.config.reconnectAttempts || 5,
       reconnectDelay: (this.config.reconnectDelay || 2) * 1e3,
       // Convert to ms
-      logger: this.log
+      logger: this.log,
       // Pass ioBroker logger to client
+      timers: this
+      // Register timers via the adapter so js-controller can track/clean them up
     });
     if (apiMode === "rest" && this.config.subscribeToStateChanges) {
       this.axiosInstance = import_axios.default.create({
@@ -146,7 +148,7 @@ class Volumio extends utils.Adapter {
         this.log.error(`Invalid connection check interval setting. Will be set to 60s`);
         interval = 60;
       }
-      this.checkConnectionInterval = setInterval(this.checkConnection, interval * 1e3, this);
+      this.checkConnectionInterval = this.setInterval(this.checkConnection, interval * 1e3, this);
     }
     if (connectionSuccess) {
       this.getSystemInfo();
@@ -200,7 +202,7 @@ class Volumio extends utils.Adapter {
         this.unsubscribeFromVolumioNotifications();
       }
       if (this.checkConnectionInterval) {
-        clearInterval(this.checkConnectionInterval);
+        this.clearInterval(this.checkConnectionInterval);
         this.checkConnectionInterval = null;
       }
       if (this.httpServerInstance) {

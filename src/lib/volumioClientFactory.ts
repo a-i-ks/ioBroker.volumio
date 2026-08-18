@@ -10,6 +10,7 @@ import type { RestClientConfig } from './restVolumioClient';
 import { WebSocketVolumioClient } from './websocketVolumioClient';
 import type { WebSocketClientConfig } from './websocketVolumioClient';
 import type { Logger } from './logger';
+import type { TimerApi } from './timers';
 
 export type ApiMode = 'rest' | 'websocket';
 
@@ -26,6 +27,7 @@ export interface VolumioClientFactoryConfig {
     forceNew?: boolean; // For WebSocket mode only - Force new connection
     validateConnection?: boolean; // For WebSocket mode only - Validate connection after connect
     logger?: Logger; // Optional logger instance
+    timers?: TimerApi; // Optional timer implementation, e.g. the owning ioBroker adapter
 }
 
 export class VolumioClientFactory {
@@ -52,6 +54,7 @@ export class VolumioClientFactory {
             port: config.port,
             pollInterval: config.pollInterval || 2000,
             logger: config.logger, // Pass logger
+            timers: config.timers, // Pass timer implementation
         };
         return new RestVolumioClient(restConfig);
     }
@@ -73,6 +76,7 @@ export class VolumioClientFactory {
             forceNew: config.forceNew, // Pass forceNew flag
             validateConnection: config.validateConnection, // Pass validation flag
             logger: config.logger, // Pass logger
+            timers: config.timers, // Pass timer implementation
         };
         return new WebSocketVolumioClient(wsConfig);
     }

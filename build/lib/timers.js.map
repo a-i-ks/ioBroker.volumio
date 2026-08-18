@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../src/lib/timers.ts"],
+  "sourcesContent": ["/**\n * Timer abstraction used by the Volumio clients.\n *\n * ioBroker adapters should register their intervals/timeouts via\n * `adapter.setInterval()`/`adapter.setTimeout()` (and the matching\n * `clear*` methods) instead of the global functions, so js-controller\n * can track and clean them up automatically (e.g. on unload or in\n * compact mode). Since the client classes here are plain, adapter-agnostic\n * classes (also used standalone, e.g. from test-client.js), they accept\n * an optional `TimerApi` - when the adapter passes itself (or an object\n * with matching methods) as `timers` in the client config, its timer\n * methods are used; otherwise this falls back to the global timer\n * functions.\n */\nexport interface TimerApi {\n    setInterval: (callback: () => void, ms: number) => any;\n    clearInterval: (timer: any) => void;\n    setTimeout: (callback: () => void, ms: number) => any;\n    clearTimeout: (timer: any) => void;\n}\n\nexport const globalTimers: TimerApi = {\n    setInterval: (callback, ms) => setInterval(callback, ms),\n    clearInterval: timer => clearInterval(timer),\n    setTimeout: (callback, ms) => setTimeout(callback, ms),\n    clearTimeout: timer => clearTimeout(timer),\n};\n"],
+  "mappings": ";;;;;;;;;;;;;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAqBO,MAAM,eAAyB;AAAA,EAClC,aAAa,CAAC,UAAU,OAAO,YAAY,UAAU,EAAE;AAAA,EACvD,eAAe,WAAS,cAAc,KAAK;AAAA,EAC3C,YAAY,CAAC,UAAU,OAAO,WAAW,UAAU,EAAE;AAAA,EACrD,cAAc,WAAS,aAAa,KAAK;AAC7C;",
+  "names": []
+}

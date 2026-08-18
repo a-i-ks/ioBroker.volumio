@@ -37,7 +37,7 @@ declare global {
 class Volumio extends utils.Adapter {
     private volumioClient: IVolumioClient | null = null;
     private axiosInstance: AxiosInstance | null = null; // Only for push notification endpoints (deprecated)
-    private checkConnectionInterval: NodeJS.Timeout | null = null;
+    private checkConnectionInterval: ioBroker.Interval | undefined | null = null;
     private httpServer;
     private httpServerInstance: any;
 
@@ -132,6 +132,7 @@ class Volumio extends utils.Adapter {
             reconnectAttempts: this.config.reconnectAttempts || 5,
             reconnectDelay: (this.config.reconnectDelay || 2) * 1000, // Convert to ms
             logger: this.log, // Pass ioBroker logger to client
+            timers: this, // Register timers via the adapter so js-controller can track/clean them up
         });
 
         // Setup axios instance for push notification endpoints (deprecated, REST-only)
@@ -174,7 +175,7 @@ class Volumio extends utils.Adapter {
                 this.log.error(`Invalid connection check interval setting. Will be set to 60s`);
                 interval = 60;
             }
-            this.checkConnectionInterval = setInterval(this.checkConnection, interval * 1000, this);
+            this.checkConnectionInterval = this.setInterval(this.checkConnection, interval * 1000, this);
         }
 
         // get system infos
@@ -292,7 +293,7 @@ class Volumio extends utils.Adapter {
 
             // Clear connection check interval
             if (this.checkConnectionInterval) {
-                clearInterval(this.checkConnectionInterval);
+                this.clearInterval(this.checkConnectionInterval);
                 this.checkConnectionInterval = null;
             }
 
