@@ -255,13 +255,13 @@ class WebSocketVolumioClient {
   }
   // ==================== Playback Options ====================
   async setRandom(enabled) {
-    await this.sendCommand("random", { value: enabled });
+    await this.sendCommand("setRandom", { value: enabled });
   }
   async setRepeat(enabled) {
-    await this.sendCommand("repeat", { value: enabled });
+    await this.sendCommand("setRepeat", { value: enabled });
   }
   async setRepeatSingle(enabled) {
-    await this.sendCommand("repeatSingle", { value: enabled });
+    await this.sendCommand("setRepeatSingle", { value: enabled });
   }
   // ==================== Private Methods ====================
   async sendCommand(command, data) {

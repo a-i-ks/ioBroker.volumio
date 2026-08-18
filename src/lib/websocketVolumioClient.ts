@@ -307,15 +307,15 @@ export class WebSocketVolumioClient implements IVolumioClient {
     // ==================== Playback Options ====================
 
     async setRandom(enabled: boolean): Promise<void> {
-        await this.sendCommand('random', { value: enabled });
+        await this.sendCommand('setRandom', { value: enabled });
     }
 
     async setRepeat(enabled: boolean): Promise<void> {
-        await this.sendCommand('repeat', { value: enabled });
+        await this.sendCommand('setRepeat', { value: enabled });
     }
 
     async setRepeatSingle(enabled: boolean): Promise<void> {
-        await this.sendCommand('repeatSingle', { value: enabled });
+        await this.sendCommand('setRepeatSingle', { value: enabled });
     }
 
     // ==================== Private Methods ====================
