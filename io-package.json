@@ -478,7 +478,7 @@
         "name": "Shuffle playmode activated",
         "type": "boolean",
         "read": true,
-        "write": true
+        "write": false
       },
       "native": {}
     },
@@ -501,8 +501,8 @@
         "role": "button",
         "name": "Toggle repeat track mode",
         "type": "boolean",
-        "read": true,
-        "write": false
+        "read": false,
+        "write": true
       },
       "native": {}
     },
@@ -690,7 +690,7 @@
         "name": "Shuffle playmode activated",
         "type": "boolean",
         "read": true,
-        "write": true
+        "write": false
       },
       "native": {}
     },
