@@ -31,8 +31,25 @@ __export(websocketVolumioClient_exports, {
   WebSocketVolumioClient: () => WebSocketVolumioClient
 });
 module.exports = __toCommonJS(websocketVolumioClient_exports);
-var import_socket = __toESM(require("socket.io-client"));
 var import_logger = require("./logger");
+let socketIOModule;
+function loadSocketIO() {
+  if (!socketIOModule) {
+    const globalWithWebSocket = globalThis;
+    const nativeWebSocket = globalWithWebSocket.WebSocket;
+    if (nativeWebSocket) {
+      delete globalWithWebSocket.WebSocket;
+    }
+    try {
+      socketIOModule = require("socket.io-client");
+    } finally {
+      if (nativeWebSocket) {
+        globalWithWebSocket.WebSocket = nativeWebSocket;
+      }
+    }
+  }
+  return socketIOModule;
+}
 class WebSocketVolumioClient {
   config;
   socket;
@@ -68,7 +85,7 @@ class WebSocketVolumioClient {
       this.logger.debug(
         `Socket.IO config: reconnectAttempts=${this.config.reconnectAttempts}, reconnectDelay=${this.config.reconnectDelay}ms, timeout=${this.config.timeout}ms`
       );
-      this.socket = (0, import_socket.default)(url, {
+      this.socket = loadSocketIO()(url, {
         path: this.config.socketPath,
         transports: this.config.transports,
         reconnection: true,

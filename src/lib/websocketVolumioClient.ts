@@ -5,7 +5,7 @@
  * Real-time state updates are received via 'pushState' events.
  */
 
-import io from 'socket.io-client';
+import type SocketIOStatic from 'socket.io-client';
 import type {
     IVolumioClient,
     VolumioState,
@@ -15,6 +15,43 @@ import type {
 } from './volumioClient';
 import type { Logger } from './logger';
 import { NoOpLogger } from './logger';
+
+/**
+ * Lazily loads socket.io-client, working around a crash-causing
+ * incompatibility between the old engine.io-client v3 (bundled with
+ * socket.io-client v2 - required for Volumio's Socket.IO v2 server) and
+ * modern Node.js: engine.io-client unconditionally prefers a global
+ * `WebSocket` over the `ws` package if one exists
+ * (`node_modules/engine.io-client/lib/transports/websocket.js`), but it
+ * predates Node's native `WebSocket` global (Node >= 21, backed by undici)
+ * and cannot handle it correctly - a connection error/close cycle on the
+ * native implementation throws "RangeError: Maximum call stack size
+ * exceeded" and crashes the whole adapter process.
+ *
+ * Hiding the native global only for the moment socket.io-client (and with
+ * it engine.io-client) is first required forces it to fall back to its
+ * actual working Node transport (`ws`), which is cached for all further
+ * use once loaded.
+ */
+let socketIOModule: typeof SocketIOStatic | undefined;
+function loadSocketIO(): typeof SocketIOStatic {
+    if (!socketIOModule) {
+        const globalWithWebSocket = globalThis as { WebSocket?: unknown };
+        const nativeWebSocket = globalWithWebSocket.WebSocket;
+        if (nativeWebSocket) {
+            delete globalWithWebSocket.WebSocket;
+        }
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            socketIOModule = require('socket.io-client');
+        } finally {
+            if (nativeWebSocket) {
+                globalWithWebSocket.WebSocket = nativeWebSocket;
+            }
+        }
+    }
+    return socketIOModule!;
+}
 
 export interface WebSocketClientConfig {
     host: string;
@@ -67,7 +104,7 @@ export class WebSocketVolumioClient implements IVolumioClient {
                 `Socket.IO config: reconnectAttempts=${this.config.reconnectAttempts}, reconnectDelay=${this.config.reconnectDelay}ms, timeout=${this.config.timeout}ms`,
             );
 
-            this.socket = io(url, {
+            this.socket = loadSocketIO()(url, {
                 path: this.config.socketPath,
                 transports: this.config.transports,
                 reconnection: true,
