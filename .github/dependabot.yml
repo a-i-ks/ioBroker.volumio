@@ -17,6 +17,9 @@ updates:
     versioning-strategy: 'increase'
     cooldown:
       default-days: 7
+    ignore:
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
 
   - package-ecosystem: 'npm'
     directory: '/'
@@ -30,6 +33,9 @@ updates:
     versioning-strategy: 'increase'
     cooldown:
       default-days: 7
+    ignore:
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
 
   - package-ecosystem: 'github-actions'
     directory: '/'
