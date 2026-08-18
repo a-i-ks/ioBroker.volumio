@@ -90,6 +90,24 @@ This adapter uses the official Volumio APIs:
   Placeholder for the next version (at the beginning of the line):
   ### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+#### 🐛 Bug Fixes
+* Fixed WebSocket client sending wrong Volumio command names for playback options (`random`/`repeat`/`repeatSingle` instead of `setRandom`/`setRepeat`/`setRepeatSingle`), which silently made shuffle/repeat toggles a no-op in WebSocket mode. Found via a new live test against a real Volumio instance.
+* Removed `process.exit()` from `test-client.js` (incompatible with ioBroker compact mode)
+* Corrected `read`/`write` role flags in `io-package.json` for `queue.repeatTrack`, `playbackInfo.random`, `queue.shuffle`
+
+#### 🔧 Improvements
+* Dependencies updated (axios, body-parser, rimraf, @types/node, @typescript-eslint/*, @alcalzone/release-script and plugins, @iobroker/adapter-core)
+* Reverted an attempted `socket.io-client` v2→v4 upgrade: Volumio bundles a Socket.IO v2 server, which is fundamentally incompatible with v3/v4 clients (verified against a real Volumio 4 instance); added a dependabot ignore rule to prevent this from recurring
+* CI/`engines.node` raised to Node.js 22.x (Node 20 is EOL); test matrix now `[22.x, 24.x]`
+* Set up automated Dependabot PR auto-merging (`automerge-dependabot.yml`), replacing the previously broken workflow
+* Added `prettier.config.mjs` and reformatted the whole `src/` tree to the shared ioBroker style; removed redundant ESLint devDependencies (already provided via `@iobroker/eslint-config`)
+* Added missing English admin UI translation keys (`apiMode`, `pollInterval`, `reconnectAttempts`, `reconnectDelay`, host field)
+* Bumped `@iobroker/adapter-core` and the required `admin` version
+
+#### ✅ Testing
+* Added `npm run test:live`: an automated integration test (`test/live.volumio.test.ts`) exercising both REST and WebSocket clients against a real, reachable Volumio instance (connect, ping, system info, state shape, a reversible random-playback round-trip, clean disconnect)
+
 ### 0.9.0 (2025-12-22)
 **Major Release - Milestone before 1.0.0**
 
