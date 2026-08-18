@@ -22,3 +22,6 @@ debug.log
 
 # MCP configuration
 .mcp.json
+
+# Local drafts, not part of the repo
+forum-post-draft.md
