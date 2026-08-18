@@ -90,7 +90,7 @@ This adapter uses the official Volumio APIs:
   Placeholder for the next version (at the beginning of the line):
   ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.11.0 (2026-08-18)
 #### 🔧 Improvements
 * Timers are now registered via the adapter (`this.setInterval`/`this.setTimeout`) instead of the global functions, so js-controller can track and clean them up automatically (unload, compact mode)
 * `@types/node` downgraded to `^22.20.1` to match the adapter's actual Node 22 minimum (avoids incorrect typings for newer Node APIs)
@@ -172,9 +172,6 @@ This adapter uses the official Volumio APIs:
 
 ### 0.1.3
 * (André Iske) Security patches
-
-### 0.1.2
-* (André Iske) Minor bug fixes
 
 Older changes can be found in [CHANGELOG_OLD.md](CHANGELOG_OLD.md).
 
