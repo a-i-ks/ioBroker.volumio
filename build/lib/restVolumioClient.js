@@ -60,9 +60,7 @@ class RestVolumioClient {
   }
   async connect() {
     var _a, _b;
-    this.logger.info(
-      `Connecting to Volumio via REST API: http://${this.config.host}:${this.config.port}`
-    );
+    this.logger.info(`Connecting to Volumio via REST API: http://${this.config.host}:${this.config.port}`);
     try {
       this.logger.debug("Testing connection with getState() call...");
       const state = await this.getState();
@@ -70,9 +68,7 @@ class RestVolumioClient {
       this.connected = true;
       this.notifyConnectionChange(true);
       this.logger.info("REST API connection successful");
-      this.logger.debug(
-        `Starting state polling (interval: ${this.config.pollInterval}ms)`
-      );
+      this.logger.debug(`Starting state polling (interval: ${this.config.pollInterval}ms)`);
       this.startPolling();
     } catch (error) {
       this.connected = false;
@@ -134,12 +130,8 @@ class RestVolumioClient {
   async getSystemInfo() {
     this.logger.debug("Fetching system info...");
     try {
-      const response = await this.axiosInstance.get(
-        "/api/v1/getSystemInfo"
-      );
-      this.logger.silly(
-        `System info response: ${JSON.stringify(response.data)}`
-      );
+      const response = await this.axiosInstance.get("/api/v1/getSystemInfo");
+      this.logger.silly(`System info response: ${JSON.stringify(response.data)}`);
       return response.data;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -250,9 +242,7 @@ class RestVolumioClient {
   checkStateChange(newState) {
     if (!this.lastState || this.hasStateChanged(this.lastState, newState)) {
       this.logger.debug("State change detected");
-      this.logger.silly(
-        `Old state: ${JSON.stringify(this.lastState)}, New state: ${JSON.stringify(newState)}`
-      );
+      this.logger.silly(`Old state: ${JSON.stringify(this.lastState)}, New state: ${JSON.stringify(newState)}`);
       this.lastState = newState;
       this.notifyStateChange(newState);
     }

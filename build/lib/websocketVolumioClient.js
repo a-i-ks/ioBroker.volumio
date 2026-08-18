@@ -81,9 +81,7 @@ class WebSocketVolumioClient {
       this.socket.on("connect", async () => {
         var _a, _b, _c, _d, _e;
         const transportName = (_d = (_c = (_b = (_a = this.socket) == null ? void 0 : _a.io) == null ? void 0 : _b.engine) == null ? void 0 : _c.transport) == null ? void 0 : _d.name;
-        this.logger.info(
-          `WebSocket connected successfully (transport: ${transportName})`
-        );
+        this.logger.info(`WebSocket connected successfully (transport: ${transportName})`);
         this.connected = true;
         this.notifyConnectionChange(true);
         if (this.config.validateConnection && !initialConnectionResolved) {
@@ -98,11 +96,7 @@ class WebSocketVolumioClient {
             this.logger.error(`Connection validation failed: ${errorMessage}`);
             initialConnectionResolved = true;
             (_e = this.socket) == null ? void 0 : _e.disconnect();
-            reject(
-              new Error(
-                `WebSocket connected but validation failed: ${errorMessage}`
-              )
-            );
+            reject(new Error(`WebSocket connected but validation failed: ${errorMessage}`));
           }
         } else if (!initialConnectionResolved) {
           initialConnectionResolved = true;
@@ -122,9 +116,7 @@ class WebSocketVolumioClient {
           description: error.description,
           context: error.context
         };
-        this.logger.error(
-          `WebSocket connection error: ${JSON.stringify(errorDetails)}`
-        );
+        this.logger.error(`WebSocket connection error: ${JSON.stringify(errorDetails)}`);
         this.logger.debug(
           `Connection attempt to ${url} failed. Transport: ${((_d = (_c = (_b = (_a = this.socket) == null ? void 0 : _a.io) == null ? void 0 : _b.engine) == null ? void 0 : _c.transport) == null ? void 0 : _d.name) || "unknown"}`
         );
@@ -136,25 +128,17 @@ class WebSocketVolumioClient {
             )
           );
         } else {
-          this.logger.warn(
-            `Reconnection attempt failed: ${error.message} (will retry)`
-          );
+          this.logger.warn(`Reconnection attempt failed: ${error.message} (will retry)`);
         }
       });
       this.socket.io.on("reconnect_attempt", (attempt) => {
-        this.logger.debug(
-          `WebSocket reconnection attempt ${attempt}/${this.config.reconnectAttempts}`
-        );
+        this.logger.debug(`WebSocket reconnection attempt ${attempt}/${this.config.reconnectAttempts}`);
       });
       this.socket.io.on("reconnect_failed", () => {
-        this.logger.error(
-          `WebSocket reconnection failed after ${this.config.reconnectAttempts} attempts`
-        );
+        this.logger.error(`WebSocket reconnection failed after ${this.config.reconnectAttempts} attempts`);
       });
       this.socket.io.on("reconnect", (attempt) => {
-        this.logger.info(
-          `WebSocket reconnected successfully after ${attempt} attempt(s)`
-        );
+        this.logger.info(`WebSocket reconnected successfully after ${attempt} attempt(s)`);
       });
       this.socket.on("pushState", (state) => {
         this.logger.silly(`Received pushState event: ${JSON.stringify(state)}`);
@@ -163,9 +147,7 @@ class WebSocketVolumioClient {
       setTimeout(() => {
         var _a;
         if (!initialConnectionResolved) {
-          this.logger.error(
-            `Connection timeout after ${this.config.timeout}ms`
-          );
+          this.logger.error(`Connection timeout after ${this.config.timeout}ms`);
           initialConnectionResolved = true;
           (_a = this.socket) == null ? void 0 : _a.disconnect();
           reject(
@@ -211,15 +193,11 @@ class WebSocketVolumioClient {
         `http://${this.config.host}:${this.config.port}/api/v1/getSystemInfo`,
         { timeout: 5e3 }
       );
-      this.logger.silly(
-        `System info response: ${JSON.stringify(response.data)}`
-      );
+      this.logger.silly(`System info response: ${JSON.stringify(response.data)}`);
       return response.data;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error(
-        `getSystemInfo() via REST fallback failed: ${errorMessage}`
-      );
+      this.logger.error(`getSystemInfo() via REST fallback failed: ${errorMessage}`);
       throw error;
     }
   }
@@ -302,9 +280,7 @@ class WebSocketVolumioClient {
           dataStr = String(data);
         }
       }
-      this.logger.debug(
-        `Sending command: ${command}${dataStr ? ` with data: ${dataStr}` : ""}`
-      );
+      this.logger.debug(`Sending command: ${command}${dataStr ? ` with data: ${dataStr}` : ""}`);
       if (command === "getState") {
         this.socket.emit(command);
         const timeout = setTimeout(() => {
@@ -313,9 +289,7 @@ class WebSocketVolumioClient {
         }, 5e3);
         this.socket.once("pushState", (response) => {
           clearTimeout(timeout);
-          this.logger.silly(
-            `Received ${command} response via pushState: ${JSON.stringify(response)}`
-          );
+          this.logger.silly(`Received ${command} response via pushState: ${JSON.stringify(response)}`);
           resolve(response);
         });
       } else {
